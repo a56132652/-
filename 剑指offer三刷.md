@@ -437,3 +437,521 @@ public:
 
 # [剑指 Offer 12. 矩阵中的路径](https://leetcode-cn.com/problems/ju-zhen-zhong-de-lu-jing-lcof/)
 
+**重刷此题，第一想法是利用回溯算法，当在矩阵中找到与word开头字符相同的字符时，递归遍历矩阵中该字符的上下左右四个方向，寻找word中的下一个字符**
+
+**代码如下：**
+
+```c++
+class Solution {
+public:
+    bool res = false;
+    string path;
+    void backTracking(vector<vector<char>>& board, const string& word, int startIndex, int x, int y)
+    {
+        if(path == word){
+            res = true;
+            return;
+        }
+        if(x >= board.size()|| y >= board[0].size()) return;
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+
+        if(word[startIndex] == board[x][y])
+        {
+            path.push_back(board[x][y]);
+            for(int i = 0; i < 4; i++){
+                backTracking(board,word,startIndex + 1, x + dx[i], y + dy[i]);
+            }
+        }
+        
+
+    }
+    bool exist(vector<vector<char>>& board, string word) {
+        for(int i = 0; i < board.size(); i++){
+            for(int j = 0; j < board[0].size(); j++){
+                if(board[i][j] == word[0]){
+                    backTracking(board,word,0,i,j);
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+**此时，当给定输入分别为`[["a","a"]] "aaa"`时报错，手动推算了一遍，发现是遍历到矩阵第二个a时，此时再向左遍历，重复计算了矩阵的第一个字符，因此，每遍历一个字符，应该将其标记，防止重复遍历**
+
+**代码如下：**
+
+```c++
+class Solution {
+public:
+    bool res = false;
+    string path;
+    void backTracking(vector<vector<char>>& board, const string& word, int startIndex, int x, int y)
+    {
+        if(path == word){
+            res = true;
+            return;
+        }
+        if(x >= board.size() || y >= board[0].size()) return;
+
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+
+        if(word[startIndex] == board[x][y])
+        {
+            path.push_back(board[x][y]);
+            char temp = board[x][y];
+            board[x][y] = '*';
+            for(int i = 0; i < 4; i++){
+                int a = x + dx[i];
+                int b = y + dy[i];
+                backTracking(board,word,startIndex + 1, a, b);
+            }
+            path.pop_back();
+            board[x][y] = temp;
+        }
+        
+
+    }
+    bool exist(vector<vector<char>>& board, string word) {
+        for(int i = 0; i < board.size(); i++){
+            for(int j = 0; j < board[0].size(); j++){
+                if(board[i][j] == word[0]){
+                    backTracking(board,word,0,i,j);
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+**喜闻乐见，又报错了，原因是超出时间限制**
+
+**更改代码如下：**
+
+```c++
+class Solution {
+public:
+    bool backTracking(vector<vector<char>>& board, const string& word, int startIndex, int x, int y)
+    {
+        if(board[x][y] != word[startIndex]) return false;
+        //已经遍历到了word的最后一个字符，则直接返回true
+        if(startIndex == word.size() - 1){
+            return true;
+        }
+
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+
+        char temp = board[x][y];
+        board[x][y] = '*';
+        for(int i = 0; i < 4; i++){
+            int a = x + dx[i];
+            int b = y + dy[i];
+            if(a >= 0 && a < board.size() && b >= 0 && b < board[a].size()){
+                if(backTracking(board,word,startIndex + 1, a, b)) return true;
+            }
+        }
+        board[x][y] = temp;
+        return false;
+
+    }
+    bool exist(vector<vector<char>>& board, string word) {
+        for(int i = 0; i < board.size(); i++){
+            for(int j = 0; j < board[0].size(); j++){
+                if(backTracking(board,word,0,i,j))
+                    return true;
+            }
+        }
+        return false;
+    }
+};
+```
+
+
+
+# [剑指 Offer 13. 机器人的运动范围](https://leetcode-cn.com/problems/ji-qi-ren-de-yun-dong-fan-wei-lcof/)
+
+```c++
+class Solution {
+public:
+    int get_sum(pair<int, int> p) {
+        int s = 0;
+        while (p.first) {
+            s += p.first % 10;
+            p.first /= 10;
+        }
+        while (p.second) {
+            s += p.second % 10;
+            p.second /= 10;
+        }
+        return s;
+    }
+
+    int movingCount(int m, int n, int k) {
+        int res = 0;
+        if(!m || !n) return 0;
+        vector<vector<bool>> st(m,vector<bool>(n));
+        queue<pair<int,int>> q;
+
+        q.push({0,0});
+
+        int dx[4] = {-1,0,1,0} ,dy[4] = {0,1,0,-1};
+
+        while(!q.empty()){
+            auto t = q.front();
+            q.pop();
+
+            if(get_sum(t) > k || st[t.first][t.second]) continue;
+            res++;
+            st[t.first][t.second] = true;
+            for(int i = 0;i < 4;i++){
+                int x = t.first + dx[i], y = t.second + dy[i];
+                if(x >= 0 && x < m && y >= 0 && y < n){
+                    q.push({x,y});
+                }
+            }
+        }
+        return res;
+    }
+};
+
+```
+
+
+
+# [剑指 Offer 14- I. 剪绳子](https://leetcode-cn.com/problems/jian-sheng-zi-lcof/)
+
+## 1. **贪心：每次尽可能去切割出3**
+
+```c++
+class Solution {
+public:
+    int cuttingRope(int n) {
+        if(n < 4) return n - 1;
+        if(n == 4) return 4;
+        int res = 1;
+        while(n > 4)
+        {
+            n -= 3;
+            res *= 3;
+        } 
+
+        return res * n;
+    }
+};
+```
+
+## 2. 动态规划
+
+- dp数组定义：绳子长度为 i 时，可以剪出的最大乘积为dp[i]
+- 状态转移：
+  - 从2到绳子长度 i 遍历，剪下一段长度 j 后，可以选择继续剪，也可以选择不再剪
+  - `dp[i] = max(j * (i - j), j * dp[i-j])`
+  - 遍历过程中不断取最大值，`dp[i] = max(max(j * (i - j), j * dp[i-j]), dp[i])`
+
+
+
+**代码如下：**
+
+```c++
+class Solution {
+public:
+    int cuttingRope(int n) {
+        vector<int> dp(n+1);
+        dp[2] = 1;
+        for(int i = 3; i <= n; i++)
+        {
+            for(int j = 2; j < i; j++)
+            {
+                dp[i] = max(j*dp[i-j],max(dp[i],j * (i-j)));
+
+            }
+        }
+        return dp[n];
+    }
+};
+```
+
+
+
+# [剑指 Offer 14- II. 剪绳子 II](https://leetcode-cn.com/problems/jian-sheng-zi-ii-lcof/)
+
+**该题要注意整形溢出问题,与上题相比，用长整型long代替了整形int**
+
+```c++
+class Solution {
+public:
+    int cuttingRope(int n) {
+        if(n < 4) return n - 1;
+        if(n == 4) return 4;
+        long res = 1;
+        while(n > 4)
+        {
+            n -= 3;
+            res = res * 3 % 1000000007;
+        } 
+
+        return res * n % 1000000007;
+    }
+};
+```
+
+
+
+# [剑指 Offer 15. 二进制中1的个数](https://leetcode-cn.com/problems/er-jin-zhi-zhong-1de-ge-shu-lcof/)
+
+**简单位运算**
+
+```c++
+class Solution {
+public:
+    int hammingWeight(uint32_t n) {
+        int res = 0;
+        for(int i = 0; i < 32; i++)
+        {
+            if((n >> i) & 1) res++;
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 16. 数值的整数次方](https://leetcode-cn.com/problems/shu-zhi-de-zheng-shu-ci-fang-lcof/)
+
+**快速幂：**
+
+![IMG_20211205_151144](F:\A3-git_repos\数据结构与算法_notes\图片\IMG_20211205_151144.jpg)
+
+## **快速幂模板：**
+
+```c++
+//非递归快速幂
+int qpow(int a, int n){
+    int ans = 1;
+    while(n){
+        if(n&1)        //如果n的当前末位为1
+            ans *= a;  //ans乘上当前的a
+        a *= a;        //a自乘
+        n >>= 1;       //n往右移一位
+    }
+    return ans;
+}
+```
+
+## 解法：
+
+```c++
+class Solution {
+public:
+    double myPow(double x, int n) {
+        double res = 1;
+        if(x == 1) return x;
+        bool flag = n > 0 ? true : false;
+        long n1 = abs(n);
+        while(n1)
+        {
+            if(n1 & 1) res *= x;
+            x *= x;
+            n1 >>= 1;
+        }
+        return flag ? res : 1/res;
+    }
+};
+```
+
+**该题要特别注意，当 n 为INT_MIN时，普通整型无法存储，必须用long型存储**
+
+# [剑指 Offer 17. 打印从1到最大的n位数](https://leetcode-cn.com/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof/)
+
+直接暴力输出
+
+```c++
+class Solution {
+public:
+    vector<int> printNumbers(int n) {
+        vector<int> res;
+        int i  =  1;
+        while(n--){
+            i *= 10;
+        }
+        for(int j = 1; j < i; j++){
+            res.push_back(j);
+        }
+        return res;
+    }
+};
+```
+
+**考虑大数越界时，用字符数组存储**
+
+```c++
+class Solution {
+private:
+    vector<int> nums;
+    string s;
+public:
+    vector<int> printNumbers(int n) {
+        s.resize(n, '0');
+        dfs(n, 0);
+        return nums;
+    }
+    
+    // 枚举所有情况
+    void dfs(int end, int index) {
+        if (index == end) {
+            save(); return;
+        }
+        for (int i = 0; i <= 9; ++i) {
+            s[index] = i + '0';
+            dfs(end, index + 1);
+        }
+    }
+    
+    // 去除首部0
+    void save() {
+        int ptr = 0;
+        while (ptr < s.size() && s[ptr] == '0') ptr++;
+        if (ptr != s.size())
+            nums.emplace_back(stoi(s.substr(ptr)));
+    }
+};
+```
+
+
+
+# [剑指 Offer 18. 删除链表的节点](https://leetcode-cn.com/problems/shan-chu-lian-biao-de-jie-dian-lcof/)
+
+```c++
+class Solution {
+public:
+    ListNode* deleteNode(ListNode* head, int val) {
+        if(!head) return head;
+        ListNode* dummy = new ListNode(-1);
+        dummy->next = head;
+        ListNode *prev = dummy;
+        ListNode* cur = head;
+        while(cur)
+        {
+            if(cur->val != val)
+            {
+                prev = cur;
+                cur = cur->next;
+            }else{
+                prev->next = cur->next;
+                return dummy->next;
+            }
+
+        }
+        return dummy->next;
+    }
+};
+```
+
+# [剑指 Offer 19. 正则表达式匹配](https://leetcode-cn.com/problems/zheng-ze-biao-da-shi-pi-pei-lcof/)
+
+## 1. 动态规划数组定义以及状态定义
+
+- `dp[i][j]: 字符串s的前i个字符与模式串p的前j个字符的匹配情况`
+- 若 `s[i-1] == p[j-1]`
+  - `dp[i][j] = dp[i-1][j-1]`
+- 若`s[i-1] != p[j-1]`
+  - 若`p[j-1] == '.'`
+    - `dp[i][j] == dp[i-1][j-1] `，该类情况可以合并到第一类中
+  - 若`p[j-1] == '*'`
+    - 则可以匹配0个`p[j-2]`或者匹配 1 个
+      - 匹配 0 个时：`dp[i][j] = dp[i][j-2]`
+      - 匹配 1 个时：`dp[i][j] = dp[i-1][j] && (s[i-1] == p[j-2] || p[j-2] == '.')`
+  - 若`p[j-1]为小写字母`
+    - 则`dp[i][j] = false`
+
+**综上，一共可以分为两种情况，分别为`p[j-1] == '*' 或者 p[j-1] != '*'`**
+
+## 2. DP数组初始化
+
+- 当给定字符串以及模式串均为空是，两者当然是匹配的(空字符匹配空字符)
+
+  - `dp[0][0] = true`
+
+- 当模式字符串为空，而给定字符串不为空时，结果当然是false
+
+  - `for(int i = 1; i <= ns; i++) dp[i][0] = false;`
+
+- 当给定字符串为空，而模式字符串不为空时，只有当模式字符串的偶数位上为`*`时，两者才匹配
+
+  - ```c++
+     for(int i = 2; i <= np; i += 2){
+                if(p[i - 1] == '*') dp[0][i] = dp[0][i-2];
+            }
+    ```
+
+
+
+## 3. 代码
+
+```c++
+class Solution {
+public:
+    bool isMatch(string s, string p) {
+        int ns = s.size();
+        int np = p.size();
+        vector<vector<bool>> dp(ns+1,vector<bool>(np+1,false));
+        dp[0][0] = true;
+        for(int i = 1; i <= ns; i++) dp[i][0] = false;
+        for(int i = 2; i <= np; i += 2){
+            if(p[i - 1] == '*') dp[0][i] = dp[0][i-2];
+        }
+
+        for(int i = 1; i <= ns; i++)
+        {
+            for(int j = 1; j <= np; j++)
+            {
+                if(p[j-1] == '*'){
+                    dp[i][j] = dp[i][j-2] || (dp[i-1][j] && (s[i-1] == p[j-2] || p[j-2] == '.'));
+                }else{
+                    if(s[i-1] == p[j-1] || p[j-1] == '.')
+                        dp[i][j] = dp[i-1][j-1];
+                    else
+                        dp[i][j] = false;
+                }
+            }
+        }
+
+        return dp[ns][np];
+    }
+};
+```
+
+# [剑指 Offer 20. 表示数值的字符串](https://leetcode-cn.com/problems/biao-shi-shu-zhi-de-zi-fu-chuan-lcof/)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

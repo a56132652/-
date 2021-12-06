@@ -929,29 +929,511 @@ public:
 
 # [剑指 Offer 20. 表示数值的字符串](https://leetcode-cn.com/problems/biao-shi-shu-zhi-de-zi-fu-chuan-lcof/)
 
+**牛逼啊这题，提交了17次，错了16次，一步一步根据错误信息完善代码，终于过了！虽然菜，但好歹是自己一步一步写的**
+
+## 1. 思路：
+
+根据题意，初步思路如下：
+
+- 首先去除字符串前后空格，以及首位的正负号，**特别注意，去除空格以后要判断字符串为否为空，这是我出错的一个点**
+
+  - ```c++
+    //去除前后空格
+    while(s[i] == ' ') i++;
+    while(s[j] == ' ') j--;
+    
+    if(i >= s.size() || j < 0) return false;
+    
+    int dot = 0, eNum = 0, flag = 0;
+    //去除首位正负号
+    if(s[i] == '+' || s[i] == '-'){
+        i++;
+        flag++;
+    }
+    ```
+
+    
+
+- 然后遍历去除前后空格之后的字符串，记录正负号数量、`e E`的数量以及点的数量
+
+  - 在字符串中遇到非`e E`的英文字符，直接返回false
+  - 遇到正负号以后
+    - 因为已经提前处理过首位的正负号，因此第二个正负号只能出现在 e E 的后面，判断其前一位是否为 e E，若不是，直接返回false，若是，则continue
+  - 遇到 点
+    - 如果之前已经有点了，则直接返回false，一个字符串中只能有一个点
+    - 如果点在字符串首部并且字符串长度不为1，且点后紧跟着一个整数，合法
+    - 如果点在字符串中部，且前一位是整数，合法
+    - 否则，不合法，返回false
+  - 遇到 e E
+    - 整个字符串只能有一个 e E，否则不合法
+    - 字符串长度为 1 ,不合法
+    - e前面为正负号，不合法
+    - e后面一位可以为正负号，其他位只能为整数
+
+**整体看来，其实该题就分为两部分，e之前的字符为一部分，e之后的字符为一部分**
+
+- e之前的字符必须为小数或者整数，**注意`3.e100`也是合法的,即一个整数带一个点是一个合法的数。形如`1.`， `2.`, ` 3.`,均是合法的数**
+- e之后的字符必须为整数，e之后一位可以是正负号，之后各位必须为`0 ~ 9`的整数
+
+**对我而言，对于出现点的情况的判断非常麻烦，这也是我一直出错的原因，然后就是一些细节处理的不够到位，比如去除首位空格以后判断字符串是否为空、字符串中部有空格,这都是我没有考虑完整的地方**
+
+**综上，下次碰上这题我感觉我还是要出错**
+
+```c++
+class Solution {
+public:
+    bool isNumber(string s) {
+        if(s.empty()) return false;
+        int i = 0, j = s.size() - 1;
+        //去除前后空格
+        while(s[i] == ' ' && i <= j) i++;
+        while(s[j] == ' ' && j >= i) j--;
+
+        if(i >= s.size() || j < 0) return false;
+        
+        int dot = 0, eNum = 0, flag = 0;
+        //去除首位正负号
+        if(s[i] == '+' || s[i] == '-'){
+            i++;
+            flag++;
+        }
+
+        for(int k = i; k <= j; k++)
+        {
+            if(s[k] == ' ') return false;
+            if(s[k] >= 'a' && s[k] <= 'z' && s[k] != 'e' || s[k] >= 'A' && s[k] <= 'Z' && s[k] != 'E') return false;
+            if(s[k] == '+' || s[k] == '-'){
+                if(k == i) return false;
+                if(k > i && (s[k-1] != 'e' || s[k-1] != 'E') ) return false;
+                else{
+                    continue;
+                }
+            }
+
+            if(s[k] == '.'){
+                if(dot > 0) return false;
+                if(k > i && (s[k-1] >= '0' && s[k-1] <= '9')){
+                    dot++;
+                    continue;
+                }
+                if(k == i && k < j && (s[k+1] >= '0' && s[k+1] <= '9')){
+                    dot++;
+                    continue;
+                }
+                return false;
+            }
+            
+            if(s[k] == 'e' || s[k] == 'E'){
+                if(eNum > 0) return false;
+                if(k == i || k == j) return false;
+                if(s[k-1] == '+' || s[k-1] == '-') return false;
+                for(int x = k + 1; x <= j; x++){
+                    if(x == k + 1 && (s[x] == '+' || s[x] == '-') && x != j) continue;
+                    if(s[x] < '0' || s[x] > '9') return false;
+                }
+                return true;
+            }
+
+        }
+        return true;
+    }
+};
+```
 
 
 
+## 2. 改善：
+
+**我只是用了两个指针指向首尾，其实处理完首尾后，完全可以利用substr将字符串截出来**
+
+贴上别人的代码
+
+```c++
+class Solution {
+public:
+    bool isNumber(string s) {
+        //首先删除前后空格
+        int i = 0, j = s.size()-1;
+        while(i <= j && s[i] == ' ') i++;
+        while(i <= j && s[j] == ' ') j--; 
+        if(i > j) return false;
+        
+        s = s.substr(i,j - i + 1);
+        if(s[0] == '+' || s[0] == '-') s = s.substr(1);     //忽略正负号
+        if(s.empty() || (s[0] == '.' && s.size() == 1)) return false;  
+
+        int dot = 0,e = 0;
+        for(int i = 0; i < s.size();i++){
+            if(s[i] >= '0' && s[i] <= '9') ;
+            else if( s[i] == '.'){
+                dot++;
+                if(dot > 1 || e) return false;  // '.'之前不可出现'.'和'e'
+            }
+            else if(s[i] == 'e' || s[i] == 'E'){
+                e++;
+                 //整串中可能出现一个'e'，且不能为首字符，且其后不能为空，'e'之前为'.'且'.'前面为空
+                if(i == 0 || i+1 == s.size() || e > 1 || s[i-1] == '.' && i == 1) return false;   
+                if(s[i+1] == '+' || s[i + 1] == '-'){             //若'e'后为正负号，则正负号后不能为空
+                    if(i+2 == s.size()) return false;
+                    i++;
+                }
+            }
+            else return false;
+        }
+        return true;
+    }
+};
+```
 
 
 
+# [剑指 Offer 21. 调整数组顺序使奇数位于偶数前面](https://leetcode-cn.com/problems/diao-zheng-shu-zu-shun-xu-shi-qi-shu-wei-yu-ou-shu-qian-mian-lcof/)
+
+**简单双指针**
+
+```c++
+class Solution {
+public:
+    vector<int> exchange(vector<int>& nums) {
+        if(nums.empty()) return nums;
+        int i = 0, j = nums.size() - 1;
+        while(i < j)
+        {
+            while(nums[i] % 2 == 0 && j > i){
+                swap(nums[i],nums[j--]);
+            }
+            i++;
+            while(nums[j] % 2 == 1 && i < j){
+                swap(nums[j],nums[i++]);
+            }
+            j--;
+        }
+        return nums;
+    }
+};
+```
 
 
 
+# [剑指 Offer 22. 链表中倒数第k个节点](https://leetcode-cn.com/problems/lian-biao-zhong-dao-shu-di-kge-jie-dian-lcof/)
+
+ **简单双指针**
+
+```c++
+class Solution {
+public:
+    ListNode* getKthFromEnd(ListNode* head, int k) {
+        if(!head) return head;
+        ListNode* dummy = new ListNode(-1);
+        dummy->next = head;
+        ListNode* fast = dummy;
+        ListNode* slow = dummy;
+        while(fast && k--){
+            fast = fast->next;
+        }
+        while(fast->next){
+            slow = slow->next;
+            fast = fast->next;
+        }
+        return slow->next;
+    }
+};
+```
 
 
 
+# [剑指 Offer 24. 反转链表](https://leetcode-cn.com/problems/fan-zhuan-lian-biao-lcof/)
+
+**纯属于自己把自己往坑里带，习惯性的加了一个哑节点，结果delete的时候老报错，于是强行回顾了一下指针相关的知识**
+
+- 当函数输入一个空指针时，结束后`prev == dummy`,此时`delete dummy`后，`prev`指向了一块非法内存，于是报错
+- 因此加了一个判断，当反转结束后，若`prev == dummy`,则先令`prev = nullptr`，再`delete dummy`
+
+```c++
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) {
+        ListNode* dummy = new ListNode(-1);
+        dummy->next = head;
+        ListNode* prev = nullptr;
+        ListNode* cur = dummy;
+        while(cur)
+        {
+            ListNode* next = cur->next;
+            cur->next = prev;
+            prev = cur;
+            cur = next;
+        }
+        
+        if(head) head->next = nullptr;
+        if(prev == dummy) prev = nullptr;
+        delete dummy;
+        dummy = nullptr;
+        return prev;
+    }
+};
+```
 
 
 
+# [剑指 Offer 25. 合并两个排序的链表](https://leetcode-cn.com/problems/he-bing-liang-ge-pai-xu-de-lian-biao-lcof/)
+
+**简单双指针**
+
+```c++
+class Solution {
+public:
+    ListNode* mergeTwoLists(ListNode* l1, ListNode* l2) {
+        ListNode* dummy = new ListNode(-1);
+        ListNode* cur = dummy;
+        ListNode* head1 = l1;
+        ListNode* head2 = l2;
+        while(head1 && head2)
+        {
+            if(head1->val < head2->val){
+                cur->next = head1;
+                head1 = head1->next;
+            }else{
+                cur->next = head2;
+
+            }
+            cur = cur->next;
+        }
+        if(head1) cur->next = head1;
+        if(head2) cur->next = head2;
+        
+        return dummy->next;
+    }
+};
+```
 
 
 
+# [剑指 Offer 26. 树的子结构](https://leetcode-cn.com/problems/shu-de-zi-jie-gou-lcof/)
+
+## 1. 错解
+
+```c++
+class Solution {
+public:
+    bool dfs(TreeNode* A, TreeNode* B)
+    {
+        if(!B) return true;
+        if(!A && B) return false;
+
+        if(A->val == B->val) return dfs(A->left,B->left) && dfs(A->right,B->right);
+        return dfs(A->left,B) || dfs(A->right,B);
+    }
+    bool isSubStructure(TreeNode* A, TreeNode* B) {
+        if(!A || !B) return false;
+        return dfs(A,B);
+    }
+};
+```
+
+## 2. 正解
+
+```c++
+class Solution {
+public:
+    bool dfs(TreeNode* A, TreeNode* B)
+    {
+        if(!B) return true;
+        if(!A && B) return false;
+
+        if(A->val == B->val) return dfs(A->left,B->left) && dfs(A->right,B->right);
+        return false;
+    }
+    bool isSubStructure(TreeNode* A, TreeNode* B) {
+        if(!B || !A) return false;
+        return dfs(A,B) || isSubStructure(A->left,B) || isSubStructure(A->right,B);
+    }
+};
+```
+
+## 3. 思考
+
+**该题分为两步：**
+
+1. 在树A中找到与树B根节点相同值的节点X
+2. 然后判断树A中以节点X为根节点的子树是否包含树B
+
+**两者的递归终止条件是不同的：**
+
+**对于步骤1 ，由于规定空树不为任何树的子树，因此只要树A或者树B两者之一为空，就返回false**
+
+**对于步骤2，当遍历到树B的空节点时，不论树A当前节点是否为空，都应返回true,表示树B的左或右子树匹配完成，而当树A当前节点为空而树B当前节点不为空时，显然匹配失败，返回false**
+
+**我的错误也是基于上述原因，没有分清楚两者区别**
+
+# [剑指 Offer 27. 二叉树的镜像](https://leetcode-cn.com/problems/er-cha-shu-de-jing-xiang-lcof/)
+
+**简单递归**
+
+```c++
+class Solution {
+public:
+    TreeNode* mirrorTree(TreeNode* root) {
+        if(!root) return root;
+
+        TreeNode* l = root->left;
+        root->left = root->right;
+        root->right = l;
+
+        mirrorTree(root->left);
+        mirrorTree(root->right);
+        
+        return root;
+    }
+};
+```
 
 
 
+# [剑指 Offer 28. 对称的二叉树](https://leetcode-cn.com/problems/dui-cheng-de-er-cha-shu-lcof/)
+
+**简单递归**
+
+```c++
+class Solution {
+public:
+    bool isMirror(TreeNode* root1, TreeNode* root2)
+    {
+        if(!root1 && !root2) return true;
+        if(!root1 && root2) return false;
+        if(root1 && !root2) return false;
+        if(root1->val == root2->val) return isMirror(root1->left,root2->right) && isMirror(root1->right,root2->left);
+        return false;
+    }
+    bool isSymmetric(TreeNode* root) {
+        if(!root) return true;
+        return isMirror(root->left,root->right);
+    }
+};
+```
 
 
 
+# [剑指 Offer 29. 顺时针打印矩阵](https://leetcode-cn.com/problems/shun-shi-zhen-da-yin-ju-zhen-lcof/)
+
+**简单模拟题**
+
+自己做的时候忽略了一个小细节，导致错误
+
+## 正解：
+
+**每次打印完一行或者一列以后，要立即判断边界条件是否合法，若不合法，立即终止循环，返回输出结果，第一次提交时由于没有注意到这点，造成了错误**
+
+```c++
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>>& matrix) {
+        vector<int> res;
+        if(matrix.empty() || matrix[0].empty()) return res;
+        int m = matrix.size();
+        int n = matrix[0].size();
+        
+        int high = 0, low = m - 1, left = 0, right = n - 1;
+        while(left <= right && high <= low)
+        {
+            for(int i = left; i <= right; i++)
+                res.push_back(matrix[high][i]);
+            high++;
+            //判断边界条件
+            if(high > low) break;
+
+            for(int i = high; i <= low; i++)
+                res.push_back(matrix[i][right]);
+            right--;
+            //判断边界条件
+            if(right < left) break;
+
+            for(int i = right; i >= left; i--)
+                res.push_back(matrix[low][i]);
+            low--;
+            //判断边界条件
+            if(low < high) break;
+
+            for(int i = low; i >= high; i--)
+                res.push_back(matrix[i][left]);
+            left++;
+            //判断边界条件
+            if(left > right) break;
+        }
+        return res;
+    }
+};
+```
+
+**精简版**
+
+```c++
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>>& matrix) {
+        vector<int> res;
+        if(matrix.empty() || matrix[0].empty()) return res;
+        int high = 0;
+        int low = matrix.size()-1;
+        int left = 0;
+        int right = matrix[0].size()-1;
+
+        while(true)
+        {
+            for(int i = left; i <= right; i++)  res.push_back(matrix[high][i]);
+            if(++high > low) break;
+            for(int i = high; i <= low; i++) res.push_back(matrix[i][right]);
+            if(--right < left) break;
+            for(int i = right; i >= left; i--) res.push_back(matrix[low][i]);
+            if(--low < high) break;
+            for(int i = low; i >= high; i--) res.push_back(matrix[i][left]);
+            if(++left > right) break;
+        }
+        return res;
+    }
+};
+```
 
 
+
+# [剑指 Offer 30. 包含min函数的栈](https://leetcode-cn.com/problems/bao-han-minhan-shu-de-zhan-lcof/)
+
+**可以用一个栈也可以用两个栈，但是两种方法本质上是相同的**
+
+```c++
+class MinStack {
+public:
+    /** initialize your data structure here. */
+    MinStack() {
+
+    }
+    
+    void push(int x) {
+        if(s.empty()) s.push(pair<int,int>{x,x});
+        else{
+            pair<int,int> num;
+            num.first = x;
+            num.second = x > s.top().second ? s.top().second : x;
+            s.push(num);
+        }
+    }
+    
+    void pop() {
+        s.pop();
+    }
+    
+    int top() {
+        return s.top().first;
+    }
+    
+    int min() {
+        return s.top().second;
+    }
+private:
+    stack<pair<int,int>> s;
+};
+```
+
+
+
+# [剑指 Offer 31. 栈的压入、弹出序列](https://leetcode-cn.com/problems/zhan-de-ya-ru-dan-chu-xu-lie-lcof/)

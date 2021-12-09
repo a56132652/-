@@ -512,9 +512,8 @@ public:
             path.pop_back();
             board[x][y] = temp;
         }
-        
-
     }
+    
     bool exist(vector<vector<char>>& board, string word) {
         for(int i = 0; i < board.size(); i++){
             for(int j = 0; j < board[0].size(); j++){
@@ -1437,3 +1436,696 @@ private:
 
 
 # [剑指 Offer 31. 栈的压入、弹出序列](https://leetcode-cn.com/problems/zhan-de-ya-ru-dan-chu-xu-lie-lcof/)
+
+**简单模拟题**
+
+```c++
+class Solution {
+public:
+    bool validateStackSequences(vector<int>& pushed, vector<int>& popped) {
+        stack<int> s;
+        int i = 0;
+        for(auto num : pushed){
+            s.push(num);
+            while(!s.empty() && s.top() == popped[i]){
+                s.pop();
+                i++;
+            }
+        }
+        return s.empty();
+    }
+};
+```
+
+
+
+# [剑指 Offer 32 - I. 从上到下打印二叉树](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-lcof/)
+
+**简单层序遍历**
+
+```c++
+class Solution {
+public:
+    vector<int> levelOrder(TreeNode* root) {
+        vector<int> res;
+        if(!root) return res;
+        queue<TreeNode*> q;
+        q.push(root);
+        while(!q.empty())
+        {
+            TreeNode* cur = q.front();
+            res.push_back(cur->val);
+            q.pop();
+            if(cur->left) q.push(cur->left);
+            if(cur->right) q.push(cur->right);
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 32 - II. 从上到下打印二叉树 II](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-ii-lcof/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        if(!root) return res;
+        queue<TreeNode*> q;
+        q.push(root);
+        while(!q.empty())
+        {
+            int size = q.size();
+            vector<int> level;
+            for(int i = 0; i < size; i++)
+            {
+                TreeNode* cur = q.front();
+                q.pop();
+                level.push_back(cur->val);
+                if(cur->left) q.push(cur->left);
+                if(cur->right) q.push(cur->right);
+            }
+            res.push_back(level);
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 32 - III. 从上到下打印二叉树 III](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-iii-lcof/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        if(!root) return res;
+        queue<TreeNode*> q;
+        q.push(root);
+        int flag = 1;
+        while(!q.empty())
+        {
+            int size = q.size();
+            vector<int> level;
+            for(int i = 0; i < size; i++)
+            {
+                TreeNode* cur = q.front();
+                q.pop();
+                level.push_back(cur->val);
+                if(cur->left) q.push(cur->left);
+                if(cur->right) q.push(cur->right);
+            }
+            if(flag % 2 == 0) reverse(level.begin(),level.end());
+            res.push_back(level);
+            flag++;
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 33. 二叉搜索树的后序遍历序列](https://leetcode-cn.com/problems/er-cha-sou-suo-shu-de-hou-xu-bian-li-xu-lie-lcof/)
+
+**该题给定一棵二叉搜索树，对于二叉搜索树，有　左子树的值　＜　根节点值　＜　右子树的值，而后序遍历序列的顺序是`左 右 根`，因此可以根据以上的大小关系，递归判断左子树序列、右子树序列是否满足以上关系**
+
+- 给定数组的尾部元素即为根节点值root
+- 遍历数组，寻找第一个比根节点大的值n，则 n 之前为左子树后序遍历序列，n 之后root 之前即为后序遍历序列
+- 上面遍历的过程中已经确定了左子树都是小于root的，因此还要判断右子树序列是否均大于root,若不是，则返回false
+- 递归左右子树序列
+
+
+
+```c++
+class Solution {
+public:
+    bool dfs(vector<int>& postorder, int i, int j)
+    {
+        if(i >= j) return true;
+        int root = postorder[j];
+        int p = i;
+        while(postorder[p] < root) p++;
+        for(int k = p; k < j; k++)
+            if(postorder[k] < root) return false;
+        
+        return dfs(postorder,p,j-1) && dfs(postorder,i,p-1);
+    }
+    bool verifyPostorder(vector<int>& postorder) {
+        if(postorder.empty()) return true;
+        return dfs(postorder,0,postorder.size() - 1);
+    }
+};
+```
+
+
+
+# [剑指 Offer 34. 二叉树中和为某一值的路径](https://leetcode-cn.com/problems/er-cha-shu-zhong-he-wei-mou-yi-zhi-de-lu-jing-lcof/)
+
+**根据代码随想录的回溯套路组织代码，中间踩了不少坑**
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(TreeNode* root, int target, int sum)
+    {
+        if(!root) return;
+        path.push_back(root->val);
+        sum += root->val;
+		//终止条件这里一定要判断当前节点是不是叶子节点，不然也会报错
+        if(sum == target && !root->left && !root->right){
+            res.push_back(path);
+            //这一步必须加上，一开始没加上，发现会少pop一个元素
+            path.pop_back();
+            return;
+        }
+
+        backTracking(root->left,target,sum);
+        backTracking(root->right,target,sum);
+
+        path.pop_back();
+       //传值方式传入，不需要回溯
+       // sum -= root->val;
+
+    }
+    vector<vector<int>> pathSum(TreeNode* root, int target) {
+        if(!root) return res;
+        backTracking(root,target,0);
+        return res;
+    }
+};
+```
+
+**自己写个小递归**
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> Path ;
+    //递归遍历每一条路径
+    void dfs(TreeNode* root,vector<int> path,int targetSum,int cur_sum)
+    {
+        if(!root)  return;
+        cur_sum += root->val;
+        path.push_back(root->val);
+        if(!root->left && !root->right && cur_sum == targetSum)
+        {   
+            Path.push_back(path);
+        }
+        dfs(root->left,path,targetSum ,cur_sum);
+        dfs(root->right,path,targetSum ,cur_sum);
+        //由于是传值方式传入的path,每一层递归都是独立的，互不影响，因此不需要执行pop_back操作
+        //path.pop_back();
+    }
+
+    vector<vector<int>> pathSum(TreeNode* root, int targetSum) {
+        if(!root) return Path;
+        vector<int> path;
+        dfs(root,path,targetSum,0);
+        return Path;
+    }
+};
+```
+
+
+
+# [剑指 Offer 35. 复杂链表的复制](https://leetcode-cn.com/problems/fu-za-lian-biao-de-fu-zhi-lcof/)
+
+**哈希表**
+
+```c++
+class Solution {
+public:
+    Node* copyRandomList(Node* head) {
+        if(!head) return nullptr;
+        unordered_map<Node*,Node*> hash;
+        Node* cur = head;
+        while(cur)
+        {
+            hash[cur] = new Node(cur->val);
+            cur = cur->next;
+        }
+
+        cur = head;
+
+        while(cur)
+        {
+            hash[cur]->next = hash[cur->next];
+            hash[cur]->random = hash[cur->random];
+            cur = cur->next;
+        }
+
+        return hash[head];
+    }
+};
+```
+
+
+
+# [剑指 Offer 36. 二叉搜索树与双向链表](https://leetcode-cn.com/problems/er-cha-sou-suo-shu-yu-shuang-xiang-lian-biao-lcof/)
+
+## 暴力法：
+
+二叉搜索树的中序遍历为升序序列，将此升序序列存入数组，然后一次遍历更改每个节点的左右指针，最后特殊处理首尾两节点的指针，处理结束后返回数组首元素。
+
+```c++
+class Solution {
+public:
+    void dfs(Node* root, vector<Node*>& path)
+    {
+        if(!root) return;
+        dfs(root->left,path);
+        path.push_back(root);
+        dfs(root->right,path);
+    }
+    Node* treeToDoublyList(Node* root) {
+        if(!root) return root;
+        vector<Node*> path;
+        dfs(root,path);
+
+        for(int i = 0; i < path.size() - 1; i++)
+        {
+            path[i]->right = path[i+1];
+            path[i+1]->left = path[i];
+        }
+        path[0]->left = path[path.size() - 1];
+        path[path.size() - 1]->right = path[0];
+
+        return path[0];
+    }
+};
+```
+
+## 改进：
+
+**直接在递归过程中改变左右指针指向，递归过程中要记录前驱节点**
+
+```c++
+class Solution {
+public:
+    Node* pre;
+    Node* head;
+    void dfs(Node* root)
+    {
+        if(!root) return;
+        dfs(root->left);
+        //
+        if(!pre) head = root;
+        else pre->right = root;
+        root->left = pre;
+        pre = root;
+        //
+        dfs(root->right);
+    }
+    Node* treeToDoublyList(Node* root) {
+        if(!root) return NULL;
+        dfs(root);
+        head ->left = pre;
+        pre->right = head;
+        return head;
+    }
+};
+```
+
+
+
+# [剑指 Offer 37. 序列化二叉树](https://leetcode-cn.com/problems/xu-lie-hua-er-cha-shu-lcof/)
+
+## 1. 序列化
+
+利用层序遍历，将二叉树中的所有节点都打印出来，**包括叶子节点的左右孩子即空节点**
+
+- 遇到空节点时，用字符`#`表示
+- 节点与节点之间用`,`分离
+
+```c++
+string serialize(TreeNode* root) {
+        string res;
+        if(!root) return res;
+        queue<TreeNode*> q;
+        q.push(root);
+        int level = 1;
+        while(!q.empty())
+        {
+            TreeNode* cur = q.front();
+            q.pop();
+            if(!cur)
+            {
+                res += '#';
+                res += ',';
+            }
+            else{
+                res += to_string(cur->val);
+                res += ',';
+                q.push(cur->left);
+                q.push(cur->right);
+            }
+        }
+        return res;
+    }
+```
+
+## 2. 反序列化
+
+对于层序遍历序列，**一个节点与其左右孩子节点的位置是固定的**,对于一个二叉树层序遍历结果`[1,2,3,null,null,4,5]`，根节点的左右孩子为`2,3`，而`2`的左右孩子节点为`null,null`,`3`的左右孩子节点为`4,5`
+
+对此可以用一下代码来表示
+
+```c++
+int pos = 1;
+for(int i = 0; i < v.size(); ++i)
+{
+    if(v[i] == nullptr)
+    continue;
+    v[i]->left = v[pos++];
+    v[i]->right = v[pos++];
+}
+```
+
+**首次错误提交*
+
+```c++
+  TreeNode* deserialize(string data) {
+        if(data.empty()) return nullptr;
+        vector<TreeNode*> v;
+        for(auto s : data)
+        {
+            if(s == ',') continue;
+            if(s == '#'){
+                v.push_back(nullptr);
+            }
+            else{
+                TreeNode* node = new TreeNode(s - '0');
+                v.push_back(node);
+            }
+        }
+
+        int pos = 1;
+        for(int i = 0; i < v.size(); ++i)
+        {
+            if(v[i] == nullptr)
+                continue;
+            v[i]->left = v[pos++];
+            v[i]->right = v[pos++];
+        }
+        return v[0];
+    }
+```
+
+**我的这段代码出错出在对字符串的处理，我的想法是对字符串的每一个字符进行提取，这种想法就默认了一个字符代表一个数字，即当出现负数或者两位数时，提取的字符就是错的，因此对该部分要进行修改：因为数字之间用逗号隔开，因此两个逗号之间的所有字符合在一起才是一个完整的数字**
+
+```c++
+ TreeNode* deserialize(string s) {
+        if(s.empty()) return nullptr;
+        vector<TreeNode*> v;
+        for(int i = 0; i < s.size(); i++)
+        {
+            //遇到逗号跳过
+            if(s[i] == ',') continue;
+            //遇到'#'就加入空指针
+            else if(s[i] == '#')
+                v.push_back(nullptr);
+            else{
+                //定义一个字符用来提取数字
+                string temp = "";
+                int j = i;
+                while(s[j] != ','){
+                    temp += s[j];
+                    j++;
+                }
+                TreeNode * node = new TreeNode (stoi(temp));
+                v.push_back(node);
+                i = j;
+            }
+        }
+
+        int pos = 1;
+        for(int i = 0; i < v.size(); ++i)
+        {
+            if(v[i] == nullptr)
+                continue;
+            v[i]->left = v[pos++];
+            v[i]->right = v[pos++];
+        }
+        return v[0];
+    }
+```
+
+**以上的字符提取过程还可以进行修改**
+
+```c++
+		int j = 0;
+        while(j < data.size())
+        {
+            string stmp = "";
+            while(data[j] != ',')
+            {
+                stmp += data[j];
+                j++;
+            }
+
+            if(stmp == "#")
+            {
+                nodes.push_back(nullptr);
+            }
+            else
+            {
+                int tmp = atoi(stmp.c_str());
+                TreeNode* newnode = new TreeNode(tmp);
+                nodes.push_back(newnode);
+            }
+            j++;
+        }
+```
+
+
+
+# [剑指 Offer 38. 字符串的排列](https://leetcode-cn.com/problems/zi-fu-chuan-de-pai-lie-lcof/)
+
+**经典回溯全排列**
+
+```c++
+class Solution {
+public:
+    vector<string> res;
+    string path;
+    void backTracking(string s,vector<bool>& used)
+    {
+        if(path.size() == s.size())
+        {
+            res.push_back(path);
+            return;
+        }
+        for(int i = 0; i < s.size(); i++)
+        {
+            if(i > 0 && s[i] == s[i - 1] && used[i-1] == false) continue;
+            if(used[i] == false)
+            {
+                path.push_back(s[i]);
+                used[i] = true;
+                backTracking(s,used);
+                used[i] = false;
+                path.pop_back();
+            }
+        }
+    }
+    vector<string> permutation(string s) {
+        if(s.empty()) return res;
+        vector<bool> used(s.size(),false);
+        sort(s.begin(),s.end());
+        backTracking(s,used);
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 39. 数组中出现次数超过一半的数字](https://leetcode-cn.com/problems/shu-zu-zhong-chu-xian-ci-shu-chao-guo-yi-ban-de-shu-zi-lcof/)
+
+```c++
+class Solution {
+public:
+    int majorityElement(vector<int>& nums) {
+        sort(nums.begin(),nums.end());
+        int n = nums.size();
+        return nums[n/2];
+    }
+};
+```
+
+
+
+# [剑指 Offer 40. 最小的k个数](https://leetcode-cn.com/problems/zui-xiao-de-kge-shu-lcof/)
+
+## 1. 暴力法
+
+**排序，然后输出前N个元素**
+
+```c++
+class Solution {
+public:
+    vector<int> getLeastNumbers(vector<int>& arr, int k) {
+        if(arr.empty() || k > arr.size()) return vector<int>{};
+        sort(arr.begin(),arr.end());
+        vector<int> res(arr.begin(),arr.begin() + k);
+        return res;
+    }
+};
+```
+
+
+
+## 2. 快排
+
+**快排的思想就是以某数为基准，将数组以该基准数分为两段子数组，从左边子数组找一个比基准数的数，从右边子数组找一个比基准数小的数，然后将两数交换。基于此思想，当基准 左边的元素个数为K时，左边子数组中的元素即为K个最小的数**
+
+```c++
+class Solution {
+public:
+    vector<int> getLeastNumbers(vector<int>& arr, int k) {
+        if (k >= arr.size()) return arr;
+        return quickSort(arr, k, 0, arr.size() - 1);
+    }
+private:
+    vector<int> quickSort(vector<int>& arr, int k, int l, int r) {
+        int i = l, j = r;
+        while (i < j) {
+            while (i < j && arr[j] >= arr[l]) j--;
+            while (i < j && arr[i] <= arr[l]) i++;
+            swap(arr[i], arr[j]);
+        }
+        swap(arr[i], arr[l]);
+        if (i > k) return quickSort(arr, k, l, i - 1);
+        if (i < k) return quickSort(arr, k, i + 1, r);
+        vector<int> res;
+        res.assign(arr.begin(), arr.begin() + k);
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 41. 数据流中的中位数](https://leetcode-cn.com/problems/shu-ju-liu-zhong-de-zhong-wei-shu-lcof/)
+
+## 1. C++优先队列知识补充：
+
+定义：`priority_queue<Type, Container, Functional>`
+
+- `type:`数据类型
+- `container:`容器类型，且必须为用数组实现的容器，例如`deque vector`，不可以用`list`
+- `functional:`比较形式，当需要用自定义的数据类型时才需要传入这三个参数，使用基本数据类型时，只需要传入数据类型，默认是大顶堆
+  - 大顶堆，即降序序列：`priority_queue <int,vector<int>,less<int> >q;`
+  - 小顶堆，即升序序列：`priority_queue <int, vector<int>, greater<int> > q;`
+
+## 2. 解法：
+
+**维护一个大根堆和一个小根堆        **
+
+**大根堆存放比较小的那一部分数        **
+
+**小根堆存放比较大的那一部分数        **
+
+**则大根堆堆顶和小根堆堆顶的元素便是中间元素        **
+
+**当数量为奇数时，大根堆堆顶元素便是中位数（始终保持大根堆元素比小根堆多1），        **
+
+**为偶数时，两堆顶元素之和/2.0便是中位数，(注意要除以2.0，而不是2)**
+
+```c++
+class MedianFinder {
+public:
+    /** initialize your data structure here. */
+    priority_queue<int>  max_heap;
+    priority_queue<int,vector<int>,greater<int>> min_heap;
+
+    MedianFinder() {
+
+    }
+
+    /*
+        将元素直接添加到大根堆中,
+        若大根堆堆顶大于小根堆堆顶（即逆序），则将两堆顶元素交换
+        若大根堆元素数量过多，则将堆顶元素转到小根堆中
+    */
+    void addNum(int num) {
+        max_heap.push(num);
+        if(min_heap.size() && max_heap.top() > min_heap.top()){
+            auto temp = max_heap.top();
+            max_heap.pop();
+            max_heap.push(min_heap.top());
+            min_heap.pop();
+            min_heap.push(temp);
+        }
+        if(max_heap.size() - min_heap.size() > 1)
+        {
+            min_heap.push(max_heap.top());
+            max_heap.pop();
+        }
+    }
+    
+    double findMedian() {
+        if(max_heap.size() + min_heap.size() & 1) return max_heap.top();
+        return (max_heap.top() +min_heap.top()) / 2.0;
+    }
+};
+```
+
+
+
+# [剑指 Offer 42. 连续子数组的最大和](https://leetcode-cn.com/problems/lian-xu-zi-shu-zu-de-zui-da-he-lcof/)
+
+## 1. 贪心：
+
+局部最优：当前“连续和”为负数的时候立刻放弃，从下一个元素重新计算“连续和”，因为负数加上下一个元素 “连续和”只会越来越小。
+
+```c++
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        int res = INT_MIN , s= 0;
+        for(auto x : nums)
+        {
+            if(s < 0) s = 0;
+            s += x;
+            res = max(res,s);
+        }
+        return res;
+    }
+};
+```
+
+## 2. 动态规划
+
+```c++
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        vector<int> dp(nums.size(), 0);
+        dp[0] = nums[0];
+        int res = nums[0];
+        for(int i = 1; i < nums.size(); i++)
+        {
+            if(nums[i] + dp[i-1] < 0 ) dp[i] = max(nums[i],nums[i] + dp[i-1]);
+            else
+                dp[i] = max(dp[i-1] + nums[i],nums[i]);
+
+            if (dp[i] > res) res = dp[i];
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 43. 1～n 整数中 1 出现的次数](https://leetcode-cn.com/problems/1nzheng-shu-zhong-1chu-xian-de-ci-shu-lcof/)
+

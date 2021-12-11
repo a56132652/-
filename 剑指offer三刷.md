@@ -2129,3 +2129,227 @@ public:
 
 # [剑指 Offer 43. 1～n 整数中 1 出现的次数](https://leetcode-cn.com/problems/1nzheng-shu-zhong-1chu-xian-de-ci-shu-lcof/)
 
+ **找规律：**
+
+**将某数按十进制位( 个 十 百 千...... )分为三部分，`high(高位)、cur(当前位)、low(低位)`**
+
+- `cur == 0`时，1出现的次数为`high * digit`
+- `cur == 1`时，1出现的次数为`high * digit + low - 1`
+- `cur`为其它数字时，1出现的次数为`(high + 1) * digit`
+
+**举个栗子：**
+
+取`2301， cur = 0, high = 23, low = 1, 求十位的 1 出现次数(digit = 10)`
+
+此时 1 出现在 `0010 ~ 2219`中，即出现`(22 + 1) * (9 + 1) = 230次，即 high * digit 次`
+
+
+
+取`2314， cur = 1, high = 23, low = 4, 求十位的 1 出现次数(digit = 10)`
+
+此时 1 出现在 `0010 ~ 2314`中，其实可以拆解为两部分
+
+- `0010 ~ 2219`
+- `2310 ~ 2314`
+
+第一部分就是`cur = 0`时的情况，即`high * digit`次
+
+第二部分中 1 出现的次数 为 `low + 1`
+
+**故综上，`cur == 1`时，1出现的次数为`high * digit + low - 1`**
+
+
+
+取`2324， cur = 2, high = 23, low = 4, 求十位的 1 出现次数(digit = 10)`
+
+此时 1 出现在 `0010 ~ 2319`中，即出现`(23 + 1) * (9 + 1) = 240次，即(high + 1) * digit`
+
+`cur = 3, 4 ,5,...,9`时与上同理
+
+```c++
+class Solution {
+public:
+    int countDigitOne(int n) {
+        int res = 0;
+        long digit = 1;
+        int high = n / 10, cur = n % 10, low = 0;
+        while(high != 0 || cur != 0)
+        {
+            if(cur == 0) res += high * digit;
+            else if(cur == 1)
+                res += high * digit + low + 1;
+            else    
+                res += (high + 1) * digit;
+
+            low += cur * digit;
+            digit *= 10;
+            cur = high % 10;
+            high /= 10;
+        } 
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 44. 数字序列中某一位的数字](https://leetcode-cn.com/problems/shu-zi-xu-lie-zhong-mou-yi-wei-de-shu-zi-lcof/)
+
+**向上取整：**
+
+两个int类型的整数向上取整可以用`(n + 1) / m + 1`表示
+
+```c++
+class Solution {
+public:
+/*
+    0 ~ 9       10个 1 位
+    10 ~ 99     90个 2 位
+    100 ~ 999   900  3 位
+*/
+    int findNthDigit(int n) {   
+        long long s = 9, digit = 1, i = 1;
+        //确定几位数
+        while(n > i * s)
+        {
+            n -= s * i;
+            s *= 10;
+            i++;
+            digit *= 10;
+        }
+        //确定是哪个数
+        int number = digit + (n-1)/i + 1 - 1;  //向上取整
+
+        //确定具体是哪一位
+        int r = n % i ? n % i : i;
+        for(int j = 0; j < i - r; j++)
+        {
+            number /= 10;
+        }
+        return number % 10;
+
+    }
+};
+```
+
+
+
+# [剑指 Offer 45. 把数组排成最小的数](https://leetcode-cn.com/problems/ba-shu-zu-pai-cheng-zui-xiao-de-shu-lcof/)
+
+**自定义排序**
+
+对于数组中的数字a , b, 其对应字符为A，B
+
+若满足`A + B < B + A`,则认为`A < B`
+
+依据上述规则对数组排序
+
+```c++
+class Solution {
+public:
+    string minNumber(vector<int>& nums) {
+        sort(nums.begin(),nums.end(),[&](int a, int b){
+            string A = to_string(a);
+            string B = to_string(b);
+            return A + B < B + A;
+        });
+
+        string res = "";
+        for(auto num : nums){
+            res += to_string(num);
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 46. 把数字翻译成字符串](https://leetcode-cn.com/problems/ba-shu-zi-fan-yi-cheng-zi-fu-chuan-lcof/)
+
+**动态规划，踩了不少坑啊，不够细心**
+
+首先将数字转换为字符串string
+
+- `dp[i]：前 i 位数字的翻译方法数量`
+
+- 状态转移方程：
+
+  - 可以分为两种状态，第一种是单独翻译第 i 个数字，第二种方法是将 第 i 位数字与第 i-1位数字一起翻译
+
+  - 单独翻译的话，状态转移方程就是`dp[i] = dp[i-1]`
+
+  - 一起翻译的话，首先得判断第 i 位数字与第 i-1位数字组成的两位数是否在可翻译范围内
+
+    - ```c++
+      string temp = s.substr(i-2,2);
+      int number = stoi(temp);
+      if(number >= 0 && number <= 25)
+      ```
+
+    - 同时，还必须要判断第 i-1位数字是否为'0'，**这也是我踩的一个大坑**，              `if(s[i-2] != '0' && number >= 0 && number <= 25)`
+
+    - 状态转移方程：`dp[i] += dp[i-2];`
+
+```c++
+class Solution {
+public:
+    int translateNum(int num) {
+        string s = to_string(num);
+        vector<int> dp(s.size()+1,0);
+        dp[0] = 1;
+        dp[1] = 1;
+        for(int i = 2; i <= s.size(); i++)
+        {
+            dp[i] = dp[i-1];
+            string temp = s.substr(i-2,2);
+            int number = stoi(temp);
+            if(s[i-2] != '0' && number >= 0 && number <= 25)
+            {
+                dp[i] += dp[i-2];
+            }
+        }
+        return dp[s.size()];
+    }
+};
+```
+
+
+
+# [剑指 Offer 47. 礼物的最大价值](https://leetcode-cn.com/problems/li-wu-de-zui-da-jie-zhi-lcof/)
+
+## 1. 动态规划：
+
+```c++
+class Solution {
+public:
+    int maxValue(vector<vector<int>>& grid) {
+        if(grid.empty() || grid[0].empty()) return 0;
+        vector<vector<int>> dp(grid.size(), vector<int>(grid[0].size(), 0));
+        dp[0][0] = grid[0][0];
+        for(int i = 1; i < grid.size(); i++) dp[i][0] = grid[i][0] + dp[i-1][0];
+        for(int i = 1; i < grid[0].size(); i++) dp[0][i] = grid[0][i] + dp[0][i-1];
+
+        for(int i = 1; i < grid.size(); i++){
+            for(int j = 1; j < grid[0].size(); j++)
+            {
+                dp[i][j] = grid[i][j] + max(dp[i-1][j],dp[i][j-1]);;
+            }
+        }
+        return dp[grid.size()-1][grid[0].size()-1];
+    }
+};
+```
+
+## 2. 贪心(大错特错)：
+
+**按动态规划写出来以后，感觉有点小题大做(我也不知道为啥有这种感觉，可能因为这题太简单了？)，于是脑子一抽，觉得可以用贪心，反正每次只能往右或者往下，那我就每次取两个方向上最大的那个元素，然后如果有一边到了边界，则只能往一个方向走，大错特错！**
+
+**动态规划中的每一个点都是最优解，而贪心只能求出一个解**
+
+
+
+# [剑指 Offer 48. 最长不含重复字符的子字符串](https://leetcode-cn.com/problems/zui-chang-bu-han-zhong-fu-zi-fu-de-zi-zi-fu-chuan-lcof/)
+
+
+

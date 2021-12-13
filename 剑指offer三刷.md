@@ -2351,5 +2351,483 @@ public:
 
 # [剑指 Offer 48. 最长不含重复字符的子字符串](https://leetcode-cn.com/problems/zui-chang-bu-han-zhong-fu-zi-fu-de-zi-zi-fu-chuan-lcof/)
 
+**动态规划：**
 
+- `dp[j]: 以字符s[j]为结尾的“最长不重复子字符串”的长度`
+
+- 转移方程：固定右边界`j`，设字符`s[j]`左边距离最近的相同字符为`s[i]`,即`s[i] == s[j]`
+
+  - `i < 0`时，即 `s[j]`左边无相同字符，则`dp[j] = dp[j-1] + 1`
+
+  - `dp[j-1] < j-i`，说明字符`s[i]`在区间`dp[j-1]`之外，例如
+
+    `a b a c , dp[2] = 2,即字符串ba, 而s[i] = s[0] = a,这个a字符在ba之前`
+
+    则`dp[j] = dp[j-1] + 1`
+
+  - `dp[j-1] ≥ j-i`，说明字符`s[i]`在区间`dp[j-1]`之中，例如
+
+​					`a b a c, dp[1] = 2,即字符串ab，而当j == 2时，s[i] == s[0] == a,`
+
+​					`此时dp[j-1] = dp[1] = 2 >= 2 - 0`,则`dp[j]`的左边界由`s[i]`决定，
+
+​					即`dp[j] = j - i`
+
+**返回max(dp)**
+
+## 1. 动态规划 + 哈希表
+
+遍历字符串时，**利用哈希表存储各字符最后一次出现的索引位置**
+
+遍历到`s[j]`时，可通过访问哈希表来获取最近的相同字符的索引
+
+```c++
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        if(s.empty()) return 0;
+        unordered_map<char,int> hash;
+        int res = 0, temp = 0;
+        for(int j = 0; j < s.size(); j++)
+        {   
+            if(hash.find(s[j]) != hash.end())
+            {
+                int i = hash[s[j]];
+                temp = temp < j - i ? temp + 1 : j - i;
+            }else
+                temp++;
+                
+            res = max(res,temp); 
+            hash[s[j]] = j;
+        }
+        return res;
+    }
+};
+```
+
+## 2. 滑动窗口
+
+```c++
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        if(s.size() == 0) return 0;
+        unordered_set<char> hash;
+        int maxStr = 0;
+        int left = 0;
+        for(int i = 0; i < s.size(); i++){
+            while (hash.find(s[i]) != hash.end()){
+                hash.erase(s[left]);
+                left++;
+            }
+            maxStr = max(maxStr,i-left+1);
+            hash.insert(s[i]);
+    	}
+        return maxStr;
+    }
+};
+```
+
+
+
+# [剑指 Offer 49. 丑数](https://leetcode-cn.com/problems/chou-shu-lcof/)
+
+```c++
+class Solution {
+public:
+    int nthUglyNumber(int n) {
+        vector<int> dp(1,1);
+        int i = 0, j = 0, k = 0;
+        while(--n)
+        {
+            int t = min(dp[i]*2, min(dp[j]*3, dp[k]*5));
+            dp.push_back(t);
+            if(t == dp[i]*2) i++;
+            if(t == dp[j]*3) j++;
+            if(t == dp[k]*5) k++;
+        }
+        return dp.back();
+    }
+};
+```
+
+
+
+# [剑指 Offer 50. 第一个只出现一次的字符](https://leetcode-cn.com/problems/di-yi-ge-zhi-chu-xian-yi-ci-de-zi-fu-lcof/)
+
+**哈希表**
+
+```c++
+class Solution {
+public:
+    char firstUniqChar(string s) {
+        if(s.empty()) return ' ';
+        unordered_map<char,int> hash;
+        for(auto x : s) hash[x]++;
+        for(auto x : s){
+            if(hash.find(x) != hash.end())
+                if(hash[x] == 1)
+                    return x;
+        }
+        return ' ';
+    }
+};
+```
+
+
+
+```c++
+class Solution {
+public:
+    char firstUniqChar(string s) {
+        unordered_map<int,bool> hash;
+        for(auto x : s){
+            hash[x] = hash.find(x) == hash.end();
+        }
+        for(auto x : s){
+            if(hash[x] == true) return x;
+        }
+        return ' ';
+    }
+};
+```
+
+
+
+# [剑指 Offer 51. 数组中的逆序对](https://leetcode-cn.com/problems/shu-zu-zhong-de-ni-xu-dui-lcof/)
+
+## 归并排序回顾：
+
+![1024555-20161218163120151-452283750](F:\A3-git_repos\数据结构与算法_notes\图片\1024555-20161218163120151-452283750.png)
+
+## 解法：
+
+在归并的合并过程中，对于两个数组A B，可知这两个数组均为升序数组，因此，若此时`A[i]>B[j]`
+
+则`{A[i],B[j]}`为一个逆序对，因为为升序数组，因此`数组A中从 i 至末尾所有元素，均可与B[j]构成一个逆序对`，因此，我们可以在归并过程中完成逆序对的统计工作
+
+```c++
+class Solution {
+public:
+    int reversePairs(vector<int>& nums) {
+        vector<int> temp(nums.size() + 1,0);
+        return mergeSort(0,nums.size()-1, nums,temp);
+    }
+
+    int mergeSort(int l, int r, vector<int>& nums, vector<int>& temp)
+    {
+        if(l >= r) return 0;
+        int m = (l + r) / 2;
+        int res = mergeSort(l, m, nums, temp) + mergeSort(m + 1, r ,nums, temp);
+
+        for(int k = l; k <= r; k++)
+            temp[k] = nums[k];
+
+        int i = l, j = m + 1, k = l;
+        while(i <= m && j <= r){
+            if(temp[i] <= temp[j]) nums[k++] = temp[i++];
+            else{
+                nums[k++] = temp[j++];
+                res += m - i + 1;
+            }
+        }
+        while(i <= m) nums[k++] = temp[i++];
+        while(j <= r) nums[k++] = temp[j++];
+
+        return res;   
+    }
+};
+```
+
+
+
+# [剑指 Offer 52. 两个链表的第一个公共节点](https://leetcode-cn.com/problems/liang-ge-lian-biao-de-di-yi-ge-gong-gong-jie-dian-lcof/)
+
+```c++
+class Solution {
+public:
+    ListNode *getIntersectionNode(ListNode *headA, ListNode *headB) {
+        if(!headA || !headB) return nullptr;
+        ListNode* curA = headA;
+        ListNode* curB = headB;
+
+        while(curA != curB)
+        {
+            if(curA) curA = curA->next;
+            else curA = headB;
+            if(curB) curB = curB->next;
+            else curB = headA;
+        }
+        return curB;
+    }
+};
+```
+
+## 注意事项：
+
+**在循环体中，我一开始写的是`if(curA->next) curA = curA->next;`，咋一看好像没有问题，可是当输入的两个链表不相交时就报错了，程序会陷入死循环，因此采用`if(curA) curA = curA->next`写法，循环一定会终止，因为就算不相交，经过一次交换以后，最终会`curA = curB = nullptr`**
+
+# [剑指 Offer 53 - I. 在排序数组中查找数字 I](https://leetcode-cn.com/problems/zai-pai-xu-shu-zu-zhong-cha-zhao-shu-zi-lcof/)
+
+**二分法**
+
+对于给定区间`[i,j]`
+
+- `int mid = i + j >> 1;`
+- `if(nums[mid] < target)`
+  - 则说明`target在区间[mid+1, j]中`，因此执行`l = mid + 1`
+- `if(nums[mid] < target)`
+  - 则说明`target在区间[i, mid-1]中`，因此执行`r = mid - 1`
+- `if(nums[mid] == target)`
+  - 则右边界在区间`[mid+1，j]`中，因此执行`l = mid + 1`
+  - 则左边界在区间`[i, mid-1]`中，因此执行`r = mid - 1`
+
+
+
+```c++
+class Solution {
+public:
+    int search(vector<int>& nums, int target) {
+        if(nums.empty()) return 0;
+        int left = 0, right = 0;
+        int l = 0, r = nums.size() - 1;
+        //右边界
+        while(l <= r){
+            int mid = (l + r) / 2;
+            if(nums[mid] > target) r = mid - 1;
+            else l = mid + 1;
+        }
+        right = l;
+        //若数组中无target
+        if(r >= 0 && nums[r] != target) return 0;
+        //左边界
+        l = 0, r = nums.size() - 1;
+        while(l <= r){
+            int mid = (l + r) / 2;
+            if(nums[mid] >= target) r = mid - 1;
+            else l = mid + 1;
+        }
+        left = r;
+
+        return right - left - 1;
+    }
+};
+```
+
+
+
+# [剑指 Offer 53 - II. 0～n-1中缺失的数字](https://leetcode-cn.com/problems/que-shi-de-shu-zi-lcof/)
+
+**二分**
+
+**当`nums[mid] == mid`即数组值等于下标值时，说明从起始位置到mid的数组部分不缺元素，缺失的元素一定在[mid+1,j]中**
+
+```c++
+class Solution {
+public:
+    int missingNumber(vector<int>& nums) {
+        if(nums.empty()) return -1;
+        int l = 0, r = nums.size() -1 ;
+        while(l < r)
+        {
+            int mid = l + r >> 1;
+            if(nums[mid] == mid) l = mid + 1;
+            else{
+                r = mid - 1;
+            }
+        }
+        if(nums[l] == l) return l + 1;
+        return l;
+    }
+};
+```
+
+
+
+# [剑指 Offer 54. 二叉搜索树的第k大节点](https://leetcode-cn.com/problems/er-cha-sou-suo-shu-de-di-kda-jie-dian-lcof/)
+
+**中序倒序遍历**
+
+```c++
+class Solution {
+public:
+    int res;
+    void dfs(TreeNode* root, int& k)
+    {
+        if(!root){
+            return;
+        }
+        dfs(root->right,k);
+
+        if(k == 0) return;
+        if(--k == 0) res = root->val;
+
+        dfs(root->left,k);
+
+    }
+    int kthLargest(TreeNode* root, int k) {
+        if(!root) return -1;
+        dfs(root,k);
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 55 - I. 二叉树的深度](https://leetcode-cn.com/problems/er-cha-shu-de-shen-du-lcof/)
+
+```c++
+class Solution {
+public:
+    int maxDepth(TreeNode* root) {
+        if(!root) return 0;
+        return max(maxDepth(root->left), maxDepth(root->right)) + 1;
+    }
+};
+```
+
+
+
+# [剑指 Offer 55 - II. 平衡二叉树](https://leetcode-cn.com/problems/ping-heng-er-cha-shu-lcof/)
+
+```c++
+class Solution {
+public:
+    int maxDepth(TreeNode* root) {
+        if(!root) return 0;
+        return max(maxDepth(root->left), maxDepth(root->right)) + 1;
+    }
+
+    bool isBalanced(TreeNode* root) {
+        if(!root) return true;
+        int left = maxDepth(root->left);
+        int right = maxDepth(root->right);
+        return (abs(left - right) <= 1) && isBalanced(root->left) && isBalanced(root->right);
+    }
+};
+```
+
+
+
+# [剑指 Offer 56 - I. 数组中数字出现的次数](https://leetcode-cn.com/problems/shu-zu-zhong-shu-zi-chu-xian-de-ci-shu-lcof/)
+
+```c++
+class Solution {
+public:
+    vector<int> singleNumbers(vector<int>& nums) {
+        //相同的数异或运算结果为0，将整个数组进行异或运算，则最终结果为两个不重复数字的异或
+        int aXORb = 0;
+        for(auto x : nums)  aXORb ^= x;
+
+        //aXORb的二进制表示中，为1的那一位代表两数中有一个数该位为1，另一个书该位为0
+        //从低位开始，找出aXORb中第一个为1的是第k位，由此可将数组分为两部分
+        //一部分是第k位为1的数，另一部分是第k位为0的数
+        //再对两部分元素之一进行异或，可得到一个结果
+        int k = 0;
+        while(!(aXORb >> k & 1)) k++;
+
+        int first = 0;
+        for(auto x : nums){
+            if(x >> k & 1) first ^= x;
+        }
+
+        int second = aXORb ^ first;
+        return vector<int>{first,second};
+    }
+};
+```
+
+
+
+# [剑指 Offer 56 - II. 数组中数字出现的次数 II](https://leetcode-cn.com/problems/shu-zu-zhong-shu-zi-chu-xian-de-ci-shu-ii-lcof/)
+
+**除了一个数A以外，其他数都出现三次，则对于32位的整数，统计数组中所有数的每位出现的次数，则出现次数为3的位数，在A中该位为0**
+
+```c++
+class Solution {
+public:
+    int singleNumber(vector<int>& nums) {
+        vector<int> number(32,0);
+        for(auto x: nums)
+        {
+            for(int i = 0; i < 32; i++){
+                if((x >> i) & 1) number[i]++;
+            }
+        }
+        int res = 0;
+        for(int i = 0; i < 32; i++){
+            if(number[i] % 3 == 1)
+                res |= (1 << i);
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 57. 和为s的两个数字](https://leetcode-cn.com/problems/he-wei-sde-liang-ge-shu-zi-lcof/)
+
+**双指针**
+
+```c++
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        vector<int> res;
+        if(nums.empty()) return res;
+        int i = 0, j = nums.size() - 1;
+        while(i < j)
+        {
+            if(nums[i] + nums[j] < target) i++;
+            else if(nums[i] + nums[j] > target) j--;
+            else
+                return vector<int>{nums[i],nums[j]};
+        }
+        return vector<int>{ };
+    }
+};
+```
+
+
+
+# [剑指 Offer 57 - II. 和为s的连续正数序列](https://leetcode-cn.com/problems/he-wei-sde-lian-xu-zheng-shu-xu-lie-lcof/)
+
+**滑动窗口 双指针**
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> findContinuousSequence(int target) {
+        vector<vector<int>> res;
+        int i = 1, j = 1, sum = i;
+        while(i <= target / 2)
+        {
+            if(sum < target)
+            {
+                j++;
+                sum += j;
+            }else if(sum > target)
+            {
+                sum -= i;
+                i++;
+            }else{
+                vector<int> temp;
+                for(int k = i; k <= j; k++){
+                    temp.push_back(k);
+                }
+                res.push_back(temp);
+                sum -= i;
+                i++;
+            }
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 58 - I. 翻转单词顺序](https://leetcode-cn.com/problems/fan-zhuan-dan-ci-shun-xu-lcof/)
 

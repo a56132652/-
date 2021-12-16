@@ -2831,3 +2831,535 @@ public:
 
 # [剑指 Offer 58 - I. 翻转单词顺序](https://leetcode-cn.com/problems/fan-zhuan-dan-ci-shun-xu-lcof/)
 
+**字符串模拟，从后往前分割单词**
+
+```c++
+class Solution {
+public:
+    string reverseWords(string s) {
+        if(s.empty()) return s;
+        int right = s.size() - 1;
+        string res;
+        while(right >= 0)
+        {
+            //从后往前找到第一个字母
+            while(right >= 0 && s[right] == ' ') right--;
+            if(right < 0) break;
+            //找到第一个单词
+            int left = right;
+            while(left >= 0 && s[left] != ' ') left--;  //此时left指向一个单词的前面的空格
+            //分割出单词
+            res += s.substr(left+1,right - left);
+            //添加空格
+            res += ' ';
+
+            //继续向前分割
+            right = left;
+        }
+        //去除尾部空格
+        if(!res.empty()) res.pop_back();
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 58 - II. 左旋转字符串](https://leetcode-cn.com/problems/zuo-xuan-zhuan-zi-fu-chuan-lcof/)
+
+```c++
+class Solution {
+public:
+    string reverseLeftWords(string s, int n) {
+        reverse(s.begin(),s.end());
+        reverse(s.begin(),s.end() - n);
+        reverse(s.begin() + s.size() - n, s.end());
+        return s;
+    }
+};
+```
+
+
+
+# [剑指 Offer 59 - I. 滑动窗口的最大值](https://leetcode-cn.com/problems/hua-dong-chuang-kou-de-zui-da-zhi-lcof/)
+
+**双端队列**
+
+```c++
+class Solution {
+public:
+    vector<int> maxSlidingWindow(vector<int>& nums, int k) {
+        if(nums.empty()) return vector<int>{ };
+        vector<int> res;
+        deque<int> dq;
+        int lhs = 0, rhs = 0;
+        while(rhs < nums.size())
+        {
+            while(!dq.empty() && nums[rhs] > nums[dq.back()]) dq.pop_back();
+            dq.push_back(rhs);
+            
+            if(rhs > k - 1){
+                lhs++;
+                if(lhs > dq.front()) dq.pop_front();
+            }
+            if(rhs >= k - 1){
+                res.push_back(nums[dq.front()]);
+            }
+            rhs++;
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 59 - II. 队列的最大值](https://leetcode-cn.com/problems/dui-lie-de-zui-da-zhi-lcof/)
+
+**这不敢敢单单**
+
+```c++
+class MaxQueue {
+public:
+    MaxQueue() {
+
+    }
+    
+    int max_value() {
+        if(q.empty()) return -1;
+        return dq.front();
+    }
+    
+    void push_back(int value) {
+        if(q.empty())
+        {
+            dq.push_back(value);
+        }
+        else{
+            while(!dq.empty() && value > dq.back()) dq.pop_back();
+            dq.push_back(value);
+        }
+        q.push(value);
+    }
+    
+    int pop_front() {
+        if(q.empty()) return -1;
+        int cur = q.front();
+        q.pop();
+        if(cur == dq.front()) dq.pop_front();
+        return cur;
+    }
+private:
+    deque<int> dq;
+    queue<int> q;
+};
+```
+
+
+
+# [剑指 Offer 60. n个骰子的点数](https://leetcode-cn.com/problems/nge-tou-zi-de-dian-shu-lcof/)
+
+## **动态规划：**
+
+- `dp[i][j]:投掷完 i 枚骰子后，点数 j 的出现次数（j为所有骰子的点数和）`
+
+- 状态转移:
+
+  - ```c++
+    for (第n枚骰子的点数 i = 1; i <= 6; i ++) {
+        dp[n][j] += dp[n-1][j - i]
+    }
+    ```
+
+- 边界处理：
+
+  - ```c++
+    for (int i = 1; i <= 6; i ++) {
+        dp[1][i] = 1;
+    }
+    ```
+
+    
+
+
+```c++
+class Solution {
+public:
+    vector<double> dicesProbability(int n) {
+        int base = pow(6,n);
+        vector<vector<double>> dp(n + 1,vector<double>(6 * n + 1,0));
+        for(int i = 1; i <= 6; i++) dp[1][i] = 1;
+        for(int i = 2; i <= n; i++)
+        {
+            for(int j = i; j <= 6 * n; j++)
+            {
+                for(int k = 1; k <= 6; k++)
+                {
+                    if(k >= j) break;
+                    dp[i][j] += dp[i-1][j-k];
+                }
+            }
+        }
+
+        vector<double> res;
+        for(int i = n; i <= 6 * n; i++){
+            res.push_back(dp[n][i] / base);
+        }
+        return res;
+    }
+};
+```
+
+## 空间优化：
+
+**利用滚动数组，此时遍历顺序必须从后往前，这样才能利用上一层的结果**
+
+- `dp[i]:点数 i 的出现次数`
+
+- 状态转移：
+
+  - ```c++
+    for(int j = 1; j <= 6; j++)
+    	dp[i] += dp[i-j];
+    ```
+
+- 初始化：
+
+  - ```c++
+    for (int i = 1; i <= 6; i ++) {
+    	dp[i] = 1;
+    }
+    ```
+
+```c++
+class Solution {
+public:
+    vector<double> dicesProbability(int n) {
+        int base = pow(6,n);
+        vector<double> dp(6 * n + 1);
+        for(int i = 1; i <= 6; i++) dp[i] = 1;
+       
+        for (int i = 2; i <= n; i ++) {
+            for (int j = 6*i; j >= i; j --) {
+                dp[j] = 0;
+                for (int cur = 1; cur <= 6; cur ++) {
+                    if (j - cur < i-1) {
+                        break;
+                    }
+                    dp[j] += dp[j-cur];
+                }
+            }
+        }
+        vector<double> res;
+        for(int i = n; i <= 6 * n; i++){
+            res.push_back(dp[i] / base);
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 61. 扑克牌中的顺子](https://leetcode-cn.com/problems/bu-ke-pai-zhong-de-shun-zi-lcof/)
+
+- 无重复元素
+- 除0以外，最大值 - 最小值 < 5
+
+```c++
+class Solution {
+public:
+    bool isStraight(vector<int>& nums) {
+        set<int> repeat;
+        int min = 14, max = 0;
+        for(auto x : nums){
+            if(x == 0) continue; // 跳过大小王
+            min = min > x ? x : min;
+            max = max < x ? x : max;
+            if(repeat.find(x) != repeat.end()) return false;
+            repeat.insert(x);
+        }
+
+        return max - min < 5;
+    }
+};
+```
+
+
+
+# [剑指 Offer 62. 圆圈中最后剩下的数字](https://leetcode-cn.com/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof/)
+
+
+
+# [剑指 Offer 63. 股票的最大利润](https://leetcode-cn.com/problems/gu-piao-de-zui-da-li-run-lcof/)
+
+## 1. 贪心 ： 在最低点买入，最高点卖出
+
+**遍历数组，维护一个最低价格，在每一天都假设卖出，比较利润，最后返回最大利润**
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        if(prices.empty()) return 0;
+        int MIN = INT_MAX;
+        int res = INT_MIN;
+        for(int i = 0; i < prices.size(); i++)
+        {
+            if(MIN > prices[i]) MIN = prices[i];
+            res = max(prices[i]-MIN,res);
+        }
+        return res;
+    }
+};
+```
+
+## 2. 动态规划：
+
+- `dp[i]:前 i 天股票的最大利润`
+- 状态转移：
+  - `dp[i] = max(dp[i - 1], nums[i-1] - min(prices[i]))`
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        if(prices.empty()) return 0;
+        vector<int> dp(prices.size() + 1, 0);
+
+        int Min = INT_MAX;
+        for(int i = 1; i <= prices.size(); i++)
+        {
+            Min = min(Min,prices[i-1]);
+            dp[i] = max(dp[i-1],prices[i-1] - Min);
+        }
+        return dp[prices.size()];
+
+    }
+};
+```
+
+
+
+# [剑指 Offer 64. 求1+2+…+n](https://leetcode-cn.com/problems/qiu-12n-lcof/)
+
+**传统递归**
+
+```c++
+class Solution {
+public:
+    int sumNums(int n) {
+        int res = n;
+        if(n == 1) return res;
+        res += sumNums(n - 1);
+        return res;
+    }
+};
+```
+
+**利用`&&`代替 `if`用来终止递归**
+
+```c++
+class Solution {
+public:
+    int sumNums(int n) {
+        int res = n;
+        (n > 1) && (res += sumNums(n-1));
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 65. 不用加减乘除做加法](https://leetcode-cn.com/problems/bu-yong-jia-jian-cheng-chu-zuo-jia-fa-lcof/)
+
+`^ 异或` ----相当于 无进位的求和， 想象10进制下的模拟情况：（如:19+1=20；无进位求和就是10，而非20；因为它不管进位情况）
+
+`& 与` ----相当于求每位的进位数， 先看定义：1&1=1；1&0=0；0&0=0；即都为1的时候才为1，正好可以模拟进位数的情况,还是想象10进制下模拟情况：（9+1=10，如果是用&的思路来处理，则9+1得到的进位数为1，而不是10，所以要用<<1向左再移动一位，这样就变为10了）；
+
+**一直循环计算无进位和以及进位值，直至进位值为0，此时直接输出无进位和**
+
+```c++
+class Solution {
+public:
+    int add(int a, int b) {
+        //因为不允许用+号，所以求出异或部分和进位部分依然不能用+ 号，所以只能循环到没有进位为止        
+        while(b!=0)
+        {
+        //保存进位值，下次循环用
+            int c=(unsigned int)(a&b)<<1;//C++中负数不支持左移位，因为结果是不定的
+        //保存不进位值，下次循环用，
+            a^=b;
+        //如果还有进位，再循环，如果没有，则直接输出没有进位部分即可。
+            b=c;   
+        }
+        return a;
+    }
+};
+```
+
+
+
+# [剑指 Offer 66. 构建乘积数组](https://leetcode-cn.com/problems/gou-jian-cheng-ji-shu-zu-lcof/)
+
+**两次遍历**
+
+- 从前往后遍历数组，计算对应元素的前面所有元素之积
+- 从后往前遍历数组，将在对应元素后面的元素之积乘入数组
+
+```c++
+class Solution {
+public:
+    vector<int> constructArr(vector<int>& a) {
+        if(a.empty()) return vector<int>{};
+        vector<int> res(a.size(),1);
+        for(int i = 1; i < a.size(); i++)
+        {
+            res[i] = res[i-1] * a[i-1];
+        }
+        for(int i = a.size() - 2; i >= 0; i--)
+        {
+            res[i] *= a[i+1];
+            a[i] *= a[i+1];
+        }
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+
+**字符串模拟**
+
+```c++
+class Solution {
+public:
+    int strToInt(string s) {
+        if(s.empty()) return 0;
+        long res = 0;
+        int i = 0;
+        while(s[i] == ' ') i++;
+        if(i >= s.size()) return 0;
+        s = s.substr(i,s.size() - i + 1);
+
+        bool flag = true;
+        if(s[0] == '-') flag = false;
+
+        for(int i = 0; i < s.size(); i++)
+        {
+            if(s[0] == '+' || s[0] == '-'){
+                if(s.size() == 1) return 0;
+                int j = i + 1;
+                while(s[j] >= '0' && s[j] <= '9' && j < s.size())
+                {
+                    if(res > INT_MAX / 10) return flag ? INT_MAX : INT_MIN;
+                    res = res * 10 + s[j] - '0';
+                    j++;
+                }
+                if(res > INT_MAX) return flag ? INT_MAX : INT_MIN;
+                return flag ? res : -res;
+            }  
+            else if(s[0] < '0' || s[0] > '9') return 0;
+            else{
+                while(s[i] >= '0' && s[i] <= '9' && i < s.size())
+                {
+                    if(res > INT_MAX) return flag ? INT_MAX : INT_MIN;
+                    res = res * 10 + s[i] - '0';
+                    i++;
+                }
+                if(res > INT_MAX) return flag ? INT_MAX : INT_MIN;
+                return flag ? res : -res;
+            }
+        }
+        return res;
+    }
+};
+```
+
+**精简一下：**
+
+```c++
+class Solution {
+public:
+    int strToInt(string str) {
+        int i = 0;
+        while(i < str.size() && str[i] == ' ') i++;
+        long long res= 0;
+        int _minus = false;
+        if(str[i] == '+') i++;
+        else if(str[i] == '-'){
+            i++;
+            _minus = true;
+        }
+        while(i < str.size() && str[i] >= '0' && str[i] <= '9')
+        {
+            if(res > INT_MAX){
+                if(_minus) return INT_MIN;
+                return INT_MAX;
+            }
+            res = res * 10 + str[i]-'0';
+            i++;
+        }
+        if(res > INT_MAX){
+            if(_minus) return INT_MIN;
+            return INT_MAX;
+        }
+        if(_minus) return res *= -1;
+        return res;
+    }
+};
+```
+
+
+
+# [剑指 Offer 68 - I. 二叉搜索树的最近公共祖先](https://leetcode-cn.com/problems/er-cha-sou-suo-shu-de-zui-jin-gong-gong-zu-xian-lcof/)
+
+**二叉搜索树，左子节点值 < 根节点值 < 右子节点值**
+
+- 如果两节点分列在当前节点两端，则当前节点就是最近公共祖先
+- 如果当前节点就是两节点之一，则当前节点就是最近公共祖先，即两节点位于同一根树枝上
+- 否则，递归的去左右子节点寻找最近公共祖先
+
+```c++
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+        if(!root) return root;
+        if(root == p || root == q) return root == p ? p : q;
+        if(p->val > root->val && q->val < root->val || p->val < root->val && q->val > root->val) return root;
+        TreeNode* res = lowestCommonAncestor(root->left,p,q);
+        if(!res) return lowestCommonAncestor(root->right,p,q);
+        return res;
+    }
+};
+```
+
+
+
+
+
+# [剑指 Offer 68 - II. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/er-cha-shu-de-zui-jin-gong-gong-zu-xian-lcof/)
+
+**与二叉搜索树不同，不可以直接通过比较节点值的大小来判断当前节点的位置，因此，直接记录下分别在左右子树搜寻的结果：**
+
+- 如果两结果之一为空，说明两节点位于根节点的同一侧，则不为空的那个结果就是最近公共祖先
+- 如果两结果都不为空，说明两节点位于根节点两侧，则根节点就是最近公共祖先
+
+```c++
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+        if(!root) return root;
+        if(root == p || root == q) return root == p ? p : q;
+        TreeNode* left = lowestCommonAncestor(root->left, p , q);
+        TreeNode* right = lowestCommonAncestor(root->right, p , q);
+        if(!left) return right;
+        if(!right) return left;
+        else return root;
+    }
+};
+```
+

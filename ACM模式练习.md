@@ -1,6 +1,18 @@
-# ACM 模式 C++万能头文件
+# 一些细节问题
 
-#  `#include <bits/stdc++.h>`
+## 1）ACM 模式 C++万能头文件`<bits/stdc++.h>`
+
+## 2）二叉树节点
+
+```c++
+struct TreeNode{
+	int val;
+	TreeNode* left;
+	TreeNode* right;
+	TreeNode(): val(0), left(nullptr), right(nullptr){}
+	TreeNode(int x, TreeNode* l, TreeNode* r) : val(x) , left(l), right(r) {}
+};
+```
 
 
 

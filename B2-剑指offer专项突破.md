@@ -2680,9 +2680,86 @@ public:
 
 
 
-# 桶排序
+# 数据结构
+
+## map&set
+
+`map`和`set`底层为红黑树，是有序容器,且支持快速插入
+
+之前从未接触过`map`容器里的两个成员函数
+
+- `map.lower_bound(k)`：指向键大于等于k的第一个元素，注意返回值是一个迭代器，即指针
+- `map.upper_bound(k)`：指向键大于k的第一个元素
+
+```c++
+map_name.lower_bound(key)
+```
+
+该函数返回指向容器中键的迭代器，该迭代器等效于参数中传递的k。
+
+## 优先队列`priority_queue<int,vector<int>,greater<int>>`
 
 ## [剑指 Offer II 057. 值和下标之差都在给定的范围内](https://leetcode-cn.com/problems/7WqeDu/)
+
+**对于该题，直观想法是对于每一个数，遍历其前面`k`个数，寻找是否存在在区间`[nums[i] - t, nyms[i] + t]`内的数，但是该解法时间复杂度过高，容易超时**
+
+**在暴力解法中其实一直在寻找是否存在落在` [nums[i] - t, nyms[i] + t] `的数，这个过程可以用平衡的二叉搜索树来加速，平衡的二叉树的搜索时间复杂度为` O(logk)`。在 `STL` 中` set` 和 `map` 属于关联容器，其内部由红黑树实现，红黑树是平衡二叉树的一种优化实现，其搜索时间复杂度也为 `O(logk)`。逐次扫码数组，对于每个数字` nums[i]`，当前的 `set `应该由其前 `k `个数字组成，可以` lower_bound `函数可以从` set` 中找到符合大于等于 `nums[i] - t` 的最小的数，若该数存在且小于等于` nums[i] + t`，则找到了符合要求的一对数。**
+
+- 维护一个大小为`k`的滑动窗口，每次寻找窗口内的最接近 `nums[i] - t` 的最小的数，若该数存在且小于等于` nums[i] + t`，则找到了符合要求的一对数。
+
+
+
+```C++
+class Solution {
+public:
+    bool containsNearbyAlmostDuplicate(vector<int>& nums, int k, int t) {
+        set<long long> st;
+        int left = 0;
+        for (int right = 0; right < nums.size(); right ++) {
+            if (right - left > k) {
+                st.erase(nums[left]);
+                left ++;
+            }
+            auto a = st.lower_bound((long long) nums[right] - t);
+            if (a != st.end() && abs(*a - nums[right]) <= t) {
+                return true;
+            }
+            st.insert(nums[right]);
+        }
+        return false;
+    }
+};
+```
+
+**也可以使用map容器**
+
+```C++
+class Solution {
+public:
+    bool containsNearbyAlmostDuplicate(vector<int>& nums, int k, int t) {
+        map<long long, int> m;
+        int left = 0, right = 0;
+        while (right < nums.size()) {
+            if (right - left > k) {
+                m.erase(nums[left]);
+                left ++;
+            }
+            auto a = m.lower_bound((long long) nums[right] - t);
+            if (a != m.end() && abs(a->first - nums[right]) <= t) {
+                return true;
+            }
+            m[nums[right]] = right;
+            right ++;
+        }
+        return false;
+    }
+};
+
+```
+
+
+
+**map + 桶排序**
 
 因为题目只关心的是差的绝对值小于等于 `t `的数字，这时候容易联想到桶，可以把数字放进若干个大小为` t + 1 `的桶内，这样的好处是一个桶内的数字绝对值差肯定小于等于` t`。对于桶的标号进行说明，例如` [0, t]` 放进编号为` 0` 的桶内，`[t + 1, 2t + 1] `放进编号为 1 的桶内，对于负数，则 `[-t - 1, -1] `放进编号为` -1 `的桶内，`[-2t - 2, -t - 2] `编号为` -2 `的桶内，可以发现桶
 
@@ -2729,6 +2806,483 @@ public:
             }
         }
         return false;
+    }
+};
+```
+
+## [剑指 Offer II 058. 日程表](https://leetcode-cn.com/problems/fi9suh/)
+
+对于该题，暴力法就是对于给定`(start,end)`，遍历所有已经存放的日期`(i,j)`，检查是否有重复的部分
+
+- 当`start >= j || end <= i`时，区间不重合
+
+暴力法事件复杂度为`O(N^2)`
+
+如果我们在有序集合中使用二分查找来检查新日程是否可以插入，则时间复杂度为`O(logN)`
+
+因此，需要一个支持快速插入并有序的数据结构，在`c++`中，`map`底层为红黑树，里面的元素有序存放，并且支持快速插入
+
+- `map`中键值为`start`，`val`为`end`
+- 利用二分查找找到集合中大于等于`start`最小数
+- 若该数小于`end`，则说明集合重复了
+  - 注意是小于，而不是小于等于，因为集合是左闭右开区间
+- 迭代器前移一位，指向起始时间第一个小于等于`start`的日程
+  - 若该日程终止时间大于`start`，则两集合重复
+    - 注意是大于，而不是大于等于，因为集合是左闭右开区间
+
+**代码**
+
+```c++
+class MyCalendar {
+public:
+    MyCalendar() {
+
+    }
+    
+    bool book(int start, int end) {
+        auto iter = mp.lower_bound(start);
+
+        if(iter != mp.end() && iter->first < end)
+            return false;
+
+        if (iter != mp.begin() && ( -- iter)->second > start)
+            return false;
+
+        mp[start] = end;
+        return true;
+    }
+private:
+    map<int,int> mp;
+};
+```
+
+## [剑指 Offer II 059. 数据流的第 K 大数值](https://leetcode-cn.com/problems/jBjn9C/)
+
+**优先队列**
+
+`priority_queue<int,vector<int>, greater<int>>`
+
+```c++
+class KthLargest {
+public:
+    priority_queue<int, vector<int>, greater<int>> q;
+    int k;
+    KthLargest(int k, vector<int>& nums) {
+        this->k = k;
+        for (auto& x: nums) {
+            add(x);
+        }
+    }
+    
+    int add(int val) {
+        q.push(val);
+        if (q.size() > k) {
+            q.pop();
+        }
+        return q.top();
+    }
+};
+```
+
+## [剑指 Offer II 060. 出现频率最高的 k 个数字](https://leetcode-cn.com/problems/g5c51o/)
+
+**优先队列**
+
+- 首先利用哈希表统计每个数字的频率
+- 然后利用小根堆，根据频次维护小根堆
+
+```c++
+class Solution {
+public:
+    static bool cmp(pair<int, int>& m, pair<int, int>& n) {
+        return m.second > n.second;
+    }
+
+    vector<int> topKFrequent(vector<int>& nums, int k) {
+        unordered_map<int, int> occurrences;
+        for (auto& v : nums) {
+            occurrences[v]++;
+        }
+
+        // pair 的第一个元素代表数组的值，第二个元素代表了该值出现的次数
+        priority_queue<pair<int, int>, vector<pair<int, int>>, decltype(&cmp)> q(cmp);
+        for (auto& [num, count] : occurrences) {
+            if (q.size() == k) {
+                if (q.top().second < count) {
+                    q.pop();
+                    q.emplace(num, count);
+                }
+            } else {
+                q.emplace(num, count);
+            }
+        }
+        vector<int> ret;
+        while (!q.empty()) {
+            ret.emplace_back(q.top().first);
+            q.pop();
+        }
+        return ret;
+    }
+};
+```
+
+## [剑指 Offer II 061. 和最小的 k 个数对](https://leetcode-cn.com/problems/qn8gGX/)
+
+对于一个最小数对`(nums1[i],nums2[j])`，下一个最小数对一定是`(nums1[i+1],nums2[j])`或者`(nums1[i],nums2[j+1])`
+
+**但是如此添加会出现重复问题**
+
+- 选择`(nums1[0],nums2[0])`以后，将`(nums1[0],nums2[1])`和`(nums1[1],nums2[0])`加入
+- 选择`(nums1[0],nums2[1])`以后，将`(nums1[1],nums2[1])`和`(nums1[0],nums2[2])`加入
+- 选择`(nums1[1],nums2[0])`以后，将`(nums1[1],nums2[1])`和`(nums1[2],nums2[1])`加入
+
+以上步骤中出现了重复添加`(nums1[1],nums2[1])`的现象
+
+为了解决该问题，我们可以先将`nums1`的前`k`个索引数对`(0,0),(1,0),(2,0)...(k-1,0)`加入队列，每次从队列取出对头元素`(x,y)`时，只需要将`nums2`的索引增加即可，这样避免了重复加入元素的问题
+
+```c++
+class Solution {
+public:
+
+    vector<vector<int>> kSmallestPairs(vector<int>& nums1, vector<int>& nums2, int k) {
+        auto cmp = [&](const pair<int,int>& a, const pair<int,int>& b){
+            return nums1[a.first] + nums2[a.second] > nums1[b.first] + nums2[b.second];
+        };
+        vector<vector<int>> res;
+        priority_queue<pair<int,int>, vector<pair<int,int>>, decltype(cmp)> q(cmp);
+        for(int i = 0; i < min((int)nums1.size(), k); i++){
+            q.push(pair<int,int>{i,0});
+        }
+        while(k--){
+            if(!q.empty()){
+                auto top = q.top();
+                q.pop();
+                res.push_back(vector<int>{nums1[top.first],nums2[top.second]});
+                if(top.second + 1 < nums2.size())
+                    q.push(pair<int,int>{top.first, top.second + 1});
+            }
+        }
+        return res;
+    }
+};
+```
+
+
+
+# 前缀树
+
+## [剑指 Offer II 062. 实现前缀树](https://leetcode-cn.com/problems/QC3q1f/)
+
+```c++
+class Trie {
+public:
+    /** Initialize your data structure here. */
+    Trie() {
+        head = new TrieNode();
+    }
+    
+    /** Inserts a word into the trie. */
+    void insert(string word) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < word.size()){
+            int index = word[i] - 'a';
+            if(cur->childred[index] != nullptr)
+                cur = cur->childred[index];
+            else{
+                cur->childred[index] = new TrieNode();
+                cur = cur->childred[index];
+            }
+            i++;
+        }
+        cur->isEnd = true;
+    }
+    
+    /** Returns if the word is in the trie. */
+    bool search(string word) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < word.size()){
+            int index = word[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return false;
+            cur = cur->childred[index];
+            i++;
+        }
+        return cur->isEnd == true;
+    }   
+    
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    bool startsWith(string prefix) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < prefix.size()){
+            int index = prefix[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return false;
+            cur = cur->childred[index];
+            i++;
+        }
+        return true;
+    }
+private:
+    struct TrieNode{
+        TrieNode* childred[26];
+        bool isEnd;
+    };
+    TrieNode* head;
+};
+
+/**
+ * Your Trie object will be instantiated and called as such:
+ * Trie* obj = new Trie();
+ * obj->insert(word);
+ * bool param_2 = obj->search(word);
+ * bool param_3 = obj->startsWith(prefix);
+ */
+```
+
+**单独定义一个节点类型有点多余**
+
+```c++
+class Trie {
+public:
+    /** Initialize your data structure here. */
+    Trie() {
+        isEnd = false;
+        memset(next,0,sizeof(next));
+    }
+    
+    /** Inserts a word into the trie. */
+    void insert(string word) {
+        Trie* cur = this;
+        for(char temp : word)
+        {
+            if(cur->next[temp-'a'] == NULL)
+            {
+                cur->next[temp-'a'] = new Trie();
+            }
+            cur = cur->next[temp-'a'];
+        }
+        cur->isEnd = true;
+    }
+
+    
+    /** Returns if the word is in the trie. */
+    bool search(string word) {
+        Trie* cur = this;
+        for(char temp : word)
+        {
+            if(cur->next[temp-'a'] == NULL)
+            {
+                return false;
+            }else{
+                cur = cur->next[temp-'a'];
+            }
+        }
+        return cur->isEnd;
+    }
+    
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    bool startsWith(string prefix) {
+        Trie* cur = this;
+        for(char temp : prefix)
+        {
+            if(cur->next[temp-'a'] == NULL)
+            {
+                return false;
+            }else{
+                cur = cur->next[temp-'a'];
+            }
+        }
+         return true;
+    }
+
+private:
+    bool isEnd;
+    Trie* next[26];
+};
+```
+
+
+
+## [剑指 Offer II 063. 替换单词](https://leetcode-cn.com/problems/UhWRSj/)
+
+**利用前缀树，首先将词根全部加入前缀树，然后依次搜寻给定sentence中的单词(该题需要自己拆分出单词)，若单词有前缀，直接返回前缀，否则返回单词本身**
+
+**在上题实现的前缀树中添加一个方法用于寻找单词的前缀**
+
+```c++
+    string search(string word) {
+        Trie* node = this;
+        string prefix = "";
+        for(char &c: word){
+            if(node->isEnd) break;
+            if(node->links[c - 'a'] == nullptr){
+                return word;
+            }
+            prefix += c;
+            node = node->links[c - 'a'];
+        }
+        return prefix;
+    }
+```
+
+**代码：**
+
+```c++
+class Trie {
+public:
+    /** Initialize your data structure here. */
+    Trie() {
+        head = new TrieNode();
+    }
+    
+    /** Inserts a word into the trie. */
+    void insert(string word) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < word.size()){
+            int index = word[i] - 'a';
+            if(cur->childred[index] != nullptr)
+                cur = cur->childred[index];
+            else{
+                cur->childred[index] = new TrieNode();
+                cur = cur->childred[index];
+            }
+            i++;
+        }
+        cur->isEnd = true;
+    }
+      
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    bool startsWith(string prefix) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < prefix.size()){
+            int index = prefix[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return false;
+            cur = cur->childred[index];
+            i++;
+        }
+        return true;
+    }
+    string searchPre(string word){
+        TrieNode* cur = head;
+        string res = "";
+        int i = 0;
+        while(i < word.size()){
+            if(cur->isEnd) return res;
+            int index = word[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return word;
+            
+            res += word[i++];
+            cur = cur->childred[index];
+        }
+        return res;        
+    }
+private:
+    struct TrieNode{
+        TrieNode* childred[26];
+        bool isEnd;
+    };
+    TrieNode* head;
+};
+
+class Solution {
+public:
+    string replaceWords(vector<string>& dictionary, string sentence) {
+        Trie* trie = new Trie();
+        for(auto s : dictionary)
+            trie->insert(s);
+
+        string temp;
+        string res;
+        for(int i = 0; i < sentence.size(); i++){
+            if(sentence[i] != ' '){
+                temp += sentence[i];
+            }else{
+                if(temp != ""){
+                    res += trie->searchPre(temp);
+                    if(i < sentence.size())
+                        res += " ";                    
+                }
+                temp = "";
+            }
+        }
+        //循环终止后，最后一个单词还未被处理
+        if(temp != ""){
+            res += trie->searchPre(temp);
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 064. 神奇的字典](https://leetcode-cn.com/problems/US1pGT/)
+
+具体思路就是根据 dfs 搜索前缀树的每条路径。如果到达的节点与字符串中的字符不匹配，则表示此时需要修改该字符以匹配路径。如果到达对应字符串的最后一个字符所对应的节点，且该节点的 isWord 为 ture，并且当前路径刚好修改了字符串中的一个字符，那么就找到了符合要求的路径，返回 true
+
+```c++
+// 构造前缀树节点
+class Trie {
+public:
+    bool isWord;
+    vector<Trie*> children;
+    Trie () : isWord(false), children(26, nullptr) {}
+
+    void insert(const string& str) {
+        Trie* node = this;
+        for (auto& ch : str) {
+            if (node->children[ch - 'a'] == nullptr) {
+                node->children[ch - 'a'] = new Trie();
+            }
+            node = node->children[ch - 'a'];
+        }
+        node->isWord = true;
+    }
+};
+class MagicDictionary {
+private:
+    Trie* root;
+    bool dfs(Trie* root, string& word, int i, int edit) {
+        if (root == nullptr) {
+            return false;
+        }
+
+        if (root->isWord && i == word.size() && edit == 1) {
+            return true;
+        }
+
+        if (i < word.size() && edit <= 1) {
+            bool found = false;
+            for (int j = 0; j < 26 && !found; ++j) {
+                int next = (j == word[i] - 'a') ? edit : edit + 1;
+                found = dfs(root->children[j], word, i + 1, next);
+            }
+
+            return found;
+        }
+
+        return false;
+    }
+
+public:
+    /** Initialize your data structure here. */
+    MagicDictionary() {
+        root = new Trie();
+    }
+    
+    void buildDict(vector<string> dictionary) {
+        for (auto& word : dictionary) {
+            root->insert(word);
+        }
+    }
+    
+    bool search(string searchWord) {
+        return dfs(root, searchWord, 0, 0);
     }
 };
 ```

@@ -3287,3 +3287,293 @@ public:
 };
 ```
 
+## [剑指 Offer II 065. 最短的单词编码](https://leetcode-cn.com/problems/iSwD2y/)
+
+**题意即：若有一个单词为另一单词的后缀，则忽略该单词**
+
+解法一：利用一个哈希表存储所有单词，然后遍历所有单词，对于一个单词，遍历其所有后缀，若哈希表中存在一个该单词的后缀单词，则从哈希表中移除，最终哈希表中存储的元素都是**不是其他单词后缀**的单词，最后的结果就是这些单词长度加一的总和
+
+```c++
+class Solution {
+public:
+    int minimumLengthEncoding(vector<string>& words) {
+        int res = 0;
+        unordered_set<string> mp(words.begin(), words.end());
+        for(auto word : words){
+            for(int i = 1; i < word.size(); i++){
+                if(mp.count(word.substr(i)))
+                    mp.erase(word.substr(i));
+            }
+        }
+        for(auto m : mp){
+            res += m.size() + 1;
+        }   
+        return res;
+    }
+};
+```
+
+解法二：将单词反转后，插入前缀树中，此时后缀不就变成前缀了嘛，判断**一个单词为另一单词的后缀**就变成了与上一题一样的判断是否是一个单词的前缀
+
+注意：
+
+- 要先将给定数组按字符串按长度降序排序，先判断长字符串，再判断短的
+
+```c++
+class Trie {
+public:
+    /** Initialize your data structure here. */
+    Trie() {
+        head = new TrieNode();
+    }
+    
+    /** Inserts a word into the trie. */
+    void insert(string word) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < word.size()){
+            int index = word[i] - 'a';
+            if(cur->childred[index] != nullptr)
+                cur = cur->childred[index];
+            else{
+                cur->childred[index] = new TrieNode();
+                cur = cur->childred[index];
+            }
+            i++;
+        }
+        cur->isEnd = true;
+    }
+      
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    bool startsWith(string prefix) {
+        TrieNode* cur = head;
+        int i = 0;
+        while(i < prefix.size()){
+            int index = prefix[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return false;
+            cur = cur->childred[index];
+            i++;
+        }
+        return true;
+    }
+    bool searchPre(string word){
+        TrieNode* cur = head;
+        string res = "";
+        int i = 0;
+        while(i < word.size()){
+            if(cur->isEnd) break;
+            int index = word[i] - 'a';
+            if(cur->childred[index] == nullptr)
+                return false;
+            
+            res += word[i++];
+            cur = cur->childred[index];
+        }
+        return true;        
+    }
+private:
+    struct TrieNode{
+        TrieNode* childred[26];
+        bool isEnd;
+    };
+    TrieNode* head;
+};
+
+
+class Solution {
+public:
+    Trie* root = new Trie();    
+    int minimumLengthEncoding(vector<string>& words) {
+        sort(words.begin(),words.end(), [&](const string& a, const string& b){
+            return a.size() > b.size();
+        });
+        string res = "";
+        reverse(words[0].begin(),words[0].end());
+        root->insert(words[0]);
+        res += words[0];
+        res += '#';
+        for(int i = 1; i < words.size(); i++){
+            reverse(words[i].begin(),words[i].end());
+            if(root->searchPre(words[i])){
+                continue;
+            }else{
+                res += words[i];
+                res += '#';
+                root->insert(words[i]);
+            }
+        }
+        return res.size();
+    }
+};
+```
+
+## [剑指 Offer II 066. 单词之和](https://leetcode-cn.com/problems/z1R5dt/)
+
+
+
+```c++
+class Trie
+{
+    struct TrieNode{
+        int val;
+        TrieNode* children[26];
+        TrieNode(int x)
+        {
+            val = x;
+            for(int i = 0; i < 26; i++)
+            {
+                children[i] = nullptr;
+            }
+        }
+    };
+    TrieNode* root;
+public:
+    Trie()
+    {
+        root = new TrieNode(-1);
+    }
+
+    void insert(string& key,int val)
+    {
+        auto p = root;
+        for(auto s : key)
+        {
+            if(!p->children[s - 'a'])
+            {
+                p->children[s - 'a'] = new TrieNode(0);
+            }
+            p = p->children[s - 'a'];
+        }
+        //尾字符记录val
+        p->val = val;
+    }
+
+    int sum(string& prefix)
+    {
+        auto p = root;
+        for(auto s : prefix)
+        {
+            if(!p->children[s - 'a'])   return 0;
+            p = p->children[s - 'a'];
+        }
+        int sum = 0;
+        queue<TrieNode*> q;
+        q.push(p);
+        while(!q.empty())
+        {
+            TrieNode* cur = q.front();
+            sum += cur->val;
+            q.pop();
+            for(auto child : cur->children)
+            {
+                if(child)   q.push(child);
+            }
+        }
+        return sum;
+    }
+
+};
+
+class MapSum {
+public:
+    MapSum() {
+
+    }
+    
+    void insert(string key, int val) {
+        mapSum.insert(key,val);
+    }
+    
+    int sum(string prefix) {
+        return mapSum.sum(prefix);
+    }
+private:
+    Trie mapSum;
+};
+```
+
+## [421. 数组中两个数的最大异或值](https://leetcode-cn.com/problems/maximum-xor-of-two-numbers-in-an-array/)
+
+**异或运算:**
+
+- `0 ^ 1 = 1`
+- `1 ^ 1 = 0`
+- `0 ^ 0 = 0`
+
+对于一个数`x`，要寻找与其异或后结果最大的`y`,即`max(x^y)`,
+
+- 首先，二进制高位为`1`会大于低位的所有和
+  - 即`2^n > 2^(n-1) + ... + 2^0`
+  - 因此进行异或时尽量选择高位异或结果为`1`的数**(贪心)**
+- 从高位遍历`x`
+  - 若当前位为`1`,则`y`的当前位应该为`0`
+  - 若当前位为`0`,则`y`的当前位应该为`1`
+
+**利用前缀树，由于每一位非`0`即`1`,因此前缀树实际上是一棵二叉树**
+
+```c++
+class Trie{
+	vector<Trie*> next[2];
+};
+```
+
+- 首先将所有数字插入前缀树，从高位开始插入
+- 然后遍历所有数字，依次寻找与其异或后结果最大的`y`,并返回结果`x^y`
+
+```c++
+class Trie
+{
+private:
+    Trie* next[2]={nullptr};
+public:
+    Trie(){}
+
+    void insert(int x)  // 在前缀树中插入值x
+    {
+        Trie *root=this;
+        // 高位存储来Trie的前面，所以我们从左向右存储
+        for(int i=30;i>=0;i--)
+        {
+            // 取第i位的数字，30...0
+            int u = x >> i & 1;
+            // 若第u位为空，则创建一个新节点，然后root移动到下一个节点
+            if(!root->next[u])root->next[u]=new Trie();
+            root=root->next[u];
+        }
+    }
+
+    int srearch(int x)  // 在前缀树中寻找 x 的最大异或值
+    {
+        Trie *root=this;
+        // res表示最大异或值，每次res*2表示左移一位，31循环后左移了31位了，+u表示加上当前的最低位数字
+        int res=0;
+        for(int i=30;i>=0;i--)
+        {
+            int u=x>>i&1;
+            // 若 x 的第 u 位存在，我们走到相反的方向去，因为异或总是|值|相反才取最大值的
+            if(root->next[!u])root=root->next[!u],res=res*2+!u;
+            // 相反方向的节点为空，只能顺着相同方向走了
+            else root=root->next[u],res=res*2+u;
+        }
+        // 由于上面我们得到的异或另一个数组元素，此时我们需要将这个数组元素与x想异或得到 两个数的最大异或值
+        res^=x;
+        return res;
+    }
+};
+
+class Solution {
+public:
+    int findMaximumXOR(vector<int>& nums) {
+        Trie *root=new Trie();
+        for(auto x:nums)root->insert(x);
+        int res=0;
+        for(auto x:nums)
+            res=max(res,root->srearch(x));
+        return res;
+    }
+};
+```
+
+
+

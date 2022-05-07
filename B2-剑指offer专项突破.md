@@ -3493,7 +3493,7 @@ private:
 };
 ```
 
-## [421. 数组中两个数的最大异或值](https://leetcode-cn.com/problems/maximum-xor-of-two-numbers-in-an-array/)
+## [剑指 Offer II 067. 最大的异或](https://leetcode-cn.com/problems/ms70jA)
 
 **异或运算:**
 
@@ -3525,7 +3525,7 @@ class Trie{
 class Trie
 {
 private:
-    Trie* next[2]={nullptr};
+
 public:
     Trie(){}
 
@@ -3575,5 +3575,823 @@ public:
 };
 ```
 
+# 二分法
 
+*贴上一个讲解很详细的链接**
+
+[我作了首诗，保你闭着眼睛也能写对二分查找 (qq.com)](https://mp.weixin.qq.com/s?__biz=MzAxODQxMDM0Mw==&mid=2247485044&idx=1&sn=e6b95782141c17abe206bfe2323a4226&scene=21)
+
+## [剑指 Offer II 068. 查找插入位置](https://leetcode-cn.com/problems/N6YdxV/)
+
+```c++
+class Solution {
+public:
+    int searchInsert(vector<int>& nums, int target) {
+        int i = 0, j = nums.size() - 1;
+        while(i <= j){
+            int mid = i + j >> 1;
+            if(nums[mid] > target) j = mid - 1;
+            else if(nums[mid] < target) i = mid + 1;
+            else
+                return mid;
+        }
+        return i;
+    }
+};
+```
+
+## [剑指 Offer II 069. 山峰数组的顶部](https://leetcode-cn.com/problems/B1IidL/)
+
+- 峰顶元素左侧满足 arr[i-1] < arr[i]arr[i−1]<arr[i] 性质，右侧不满足
+
+- 峰顶元素右侧满足 arr[i] > arr[i+1]arr[i]>arr[i+1] 性质，左侧不满足
+
+**第一种写法**
+
+- 右边界初始化为`arr.size() - 1`
+- 循环条件为`while(i <= j)`
+- 更新边界
+  - `i = mid + 1 || j = mid - 1`
+
+```c++
+class Solution {
+public:
+    int peakIndexInMountainArray(vector<int>& arr) {
+        int i = 1, j = arr.size() - 1;
+        int res = 0 ;
+        while(i <= j){
+            int mid = (i + j) >> 1;
+            if(arr[mid] > arr[mid - 1]){
+                res = mid;
+                i = mid + 1;
+            }
+            else j = mid - 1;
+        }
+        return res;
+    }
+};
+```
+
+**另一种写法**
+
+- 右边界初始化为`arr.size()`
+- 循环条件为`while(i < j)`
+- 更新边界
+  - `i = mid + 1 || j = mid `
+
+```c++
+class Solution {
+public:
+    int peakIndexInMountainArray(vector<int>& arr) {
+        int i = 1, j = arr.size();
+        int res = 0 ;
+        while(i < j){
+            int mid = (i + j) >> 1;
+            if(arr[mid] > arr[mid - 1]){
+                res = mid;
+                i = mid + 1;
+            }
+            else j = mid;
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 070. 排序数组中只出现一次的数字](https://leetcode-cn.com/problems/skFtm2)
+
+**使用异或运算遍历数组，时间复杂度为`O(n)`，因此采用二分搜索将复杂度降至`o(logn)`**
+
+给定数组中，只有一个元素`x`出现一次，其他元素均出现两次,则以`x`分界
+
+- 对于`x`左边的元素，若有`nums[y] = nums[y + 1]`，则`y`必为偶数
+- 对于`x`右边的元素，若有`nums[z] = nums[z + 1]`，则`z`必为奇数
+
+**二分**
+
+- 若`mid` 为偶数，则比较`nums[mid] == nums[mid + 1]`
+  - 若相等，说明`mid`在`x`左边，要向右查找
+  - 若不等，说明`mid`在`x`右边，要向左查找
+- 若`mid` 为奇数，则比较`nums[mid] == nums[mid - 1]`
+  - 若相等，说明`mid`在`x`左边，要向右查找
+  - 若不等，说明`mid`在`x`右边，要向左查找
+
+**细节**
+
+利用按位异或的性质，可以得到 `mid `和相邻的数之间的如下关系，其中`⊕ `是按位异或运算符：
+
+- 当`mid `是偶数时，`mid+1=mid⊕1`；
+
+
+- 当`mid` 是奇数时，`mid−1=mid⊕1`。
+
+
+```c++
+class Solution {
+public:
+    int singleNonDuplicate(vector<int>& nums) {
+        int low = 0, high = nums.size() - 1;
+        while (low < high) {
+            int mid = (high - low) / 2 + low;
+            if (nums[mid] == nums[mid ^ 1]) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return nums[low];
+    }
+};
+
+```
+
+## [剑指 Offer II 071. 按权重生成随机数](https://leetcode-cn.com/problems/cuyjEf/)
+
+- 为题目给定的`nums`生成一个前缀和数组，以`[1, 2, 3, 5]`为例，其前缀和数组为`[1, 3, 6, 11]`，数组元素总和为`11`；
+
+
+- 使用`rand() % 11`来生成一个`0~10`范围内的随机数，在前缀和数组中找到第一个严格大于它的数，那个数的下标就是我们要找的下标。因为权重越大的数，它所占据的区间范围越大（比如5所占据的区间为6~10），随机数也就越有可能落到它所在的区间内；
+
+
+- 前缀和数组是有序的，有序数组中的查找可以使用二分法。
+
+
+
+
+```c++
+class Solution {
+private:
+    vector<int> sums;                       //sums为前缀和数组
+    int total = 0;
+
+public:
+    Solution(vector<int>& w) {
+        sums.resize(w.size());
+        for (int i = 0; i < w.size(); ++ i) //构造前缀和数组
+        {
+            total += w[i];
+            sums[i] = total;
+        }
+    }
+    
+    int pickIndex() {
+        int rnd = rand() % total;           //生成最大值范围内的随机数
+        int left = 0, right = sums.size() - 1;
+
+        while (left < right)                //二分法在前缀和数组中找到第一个大于随机数的元素下标
+        {
+            int mid = left + (right - left) / 2;
+            if (rnd < sums[mid])            
+            {
+                right = mid;
+            }
+            else
+            {
+                left = mid + 1;
+            }
+        }
+
+        return left;
+    }
+};
+```
+
+## [剑指 Offer II 072. 求平方根](https://leetcode-cn.com/problems/jJ0w9p/)
+
+```c++
+class Solution {
+public:
+    int mySqrt(int x) {
+        int l = 0, r = x, ans = -1;
+        while (l <= r) {
+            int mid = l + (r - l) / 2;
+            if ((long long)mid * mid <= x) {
+                ans = mid;
+                l = mid + 1;
+            } else {
+                r = mid - 1;
+            }
+        }
+        return ans;
+    }
+};
+
+```
+
+## [剑指 Offer II 073. 狒狒吃香蕉](https://leetcode-cn.com/problems/nZZqjQ/)
+
+首先明确，速度一定是大于 1 的，并且小于香蕉的最大值，因此，可以采用二分查找，在`[1,max]`寻找最小速度
+
+- 取中间速度`mid = 1 + max >> 1`
+- 以速度`mid`吃完所有香蕉所需时间为 `t`
+  - 若`t > h`：则速度太慢了，去`[mid+1,max]`中取
+  - 若`t < h`：则速度太快了，去`[1,mid-1]`中取
+  - 若`t == h`：去寻找可能存在的更小速度，因此去`[1,mid-1]`取
+
+```c++
+class Solution {
+public:
+    int getTime(vector<int>& piles, int v){
+        int res = 0;
+        for(int i = 0; i < piles.size(); i++){
+            if(piles[i] / v == 0){
+                res++;
+            }else{
+                res += piles[i] / v;
+                if(piles[i] % v)
+                    res++;
+            }
+        }
+        return res;
+    }
+
+    int minEatingSpeed(vector<int>& piles, int h) {
+        int mmax = 0;
+        for(auto p : piles) mmax = max(mmax, p);
+        int res = 0;
+        int l = 1, r = mmax;
+        while(l <= r){
+            int mid = (r - l) / 2 + l;
+            if(getTime(piles, mid) > h)
+                l = mid + 1;
+            else{
+                res = mid;
+                r = mid - 1;
+            }                
+        }
+        return res;
+    }
+};
+```
+
+# 排序
+
+## [剑指 Offer II 074. 合并区间](https://leetcode-cn.com/problems/SsGoHC/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        sort(intervals.begin(), intervals.end(),[&](const vector<int>& a, const vector<int>& b){
+            if(a[0] == b[0]) return a[1] < b[1];
+            return a[0] < b[0];
+        });
+
+        vector<vector<int>> res;
+        res.push_back(intervals[0]);
+        for(int i = 1; i < intervals.size(); i++){
+            int n = res.size();
+            if(res[n-1][1] >= intervals[i][0]){
+                res[n-1][1] = max(res[n-1][1], intervals[i][1]);
+            }else{
+                res.push_back(intervals[i]);
+            }
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 075. 数组相对排序](https://leetcode-cn.com/problems/0H97ZC/)
+
+```c++
+class Solution {
+public:
+    vector<int> relativeSortArray(vector<int>& arr1, vector<int>& arr2) {
+        unordered_map<int, int> rank;
+        for (int i = 0; i < arr2.size(); ++i) {
+            rank[arr2[i]] = i;
+        }
+        sort(arr1.begin(), arr1.end(), [&](int x, int y) {
+            if (rank.count(x)) {
+                return rank.count(y) ? rank[x] < rank[y] : true;
+            }
+            else {
+                return rank.count(y) ? false : x < y;
+            }
+        });
+        return arr1;
+    }
+};
+```
+
+## [剑指 Offer II 076. 数组中的第 k 大的数字](https://leetcode-cn.com/problems/xx4gT2/)
+
+**法一：快排**
+
+**利用快速排序的性质：确定一个标志点，每轮从左右两边开始查找，首先从右往左遍历，找一个比标志点小的值right，然后从左往右遍历，找一个比标志点大的值left，然后交换两者，再然后把标志点与right交换，此时，标志点左侧的值都比标志点小，标志点右侧的值都比标志点大，然后以标志点为分界点，在左右子数组中继续以上过程**
+
+**根据以上性质，每轮快排结束后，标志点左侧有i个元素，这i个元素均小于标志点，即标志点为第i个最小的元素，而要求第k个最大的元素，即求第 n - i个最小的元素，其中 n 为数组长度**
+
+**快排时，一定要注意的一点是，每次快排时，一定要先从右向左查找，只有这样，在两个指针相遇时，指向的值一定比标志点小，在与标志点交换时才不会出错，因为每次以左边界点为标志点，交换时一定要保证交换值小于标志点**
+
+```c++
+class Solution {
+public:
+    int quickSort(vector<int>& nums, int l, int r, int k)
+    {
+        int i = l, j = r;
+        while(i < j)
+        {
+            while(i < j && nums[j] >= nums[l]) j--;
+            while(i < j && nums[i] <= nums[l]) i++;
+            swap(nums[i],nums[j]);
+        }
+        swap(nums[l],nums[i]);
+
+        if(i > k) return quickSort(nums,l,i-1,k);
+        if(i < k) return quickSort(nums,i+1,r,k);
+
+        return nums[i];
+    }
+    int findKthLargest(vector<int>& nums, int k) {
+        return quickSort(nums,0,nums.size()-1,nums.size() - k);
+    }
+};
+```
+
+**法二：堆排序**
+
+数组中的第K个最大元素即数组按降序排列后第 k 个元素，若利用堆排序来解决该问题，可参照如下思路：
+
+- 小根堆——堆顶元素为最小元素，其他元素均小于该元素
+- 大根堆——堆顶元素为最大元素，其他元素均大于该元素
+
+直接利用大根堆的性质，先将数组所有元素存入大根堆，然后删除 k - 1 次堆顶元素，删除后的大根堆的堆顶元素就是答案。
+
+**直接调库：**
+
+```c++
+class Solution 
+{
+public:
+    int findKthLargest(vector<int>& nums, int k) 
+    {
+        priority_queue<int, vector<int>, less<int>> maxHeap;
+        for (int x : nums)
+            maxHeap.push(x);
+        for (int i = 0; i < k - 1; i ++)
+            maxHeap.pop();
+        return maxHeap.top();
+    }
+};
+```
+
+**自己构建大根堆**
+
+```c++
+    const int N = 100010;
+    int h[N];
+    int idx;
+
+    void down(int i, int n){
+        int t = i;
+        if(i * 2 <= n && h[2 * i] > h[t]) t = 2 * i;
+        if(i * 2 + 1 <= n && h[2 * i + 1] > h[t]) t = 2 * i + 1;
+
+        if(t != i){
+            swap(h[t], h[i]);
+            down(t,n);
+        }
+    }
+
+    void up(int i, int n){
+        while(i / 2 && h[i/2] < h[i]){
+            swap(h[i/2], h[i]);
+            i >>= 1;
+        }
+    }
+
+class Solution {
+public:
+    int findKthLargest(vector<int>& nums, int k) {
+        int n = nums.size();
+        for(int i = 1; i <= n; i++){
+            h[i] = nums[i-1];
+        }
+        for(int i = n/2; i > 0; i--)
+            down(i,n);
+
+        int res = 0;
+        while(--k){
+            h[1] = h[n--];
+            down(1,n);
+        }
+        return h[1];
+    }
+};
+```
+
+
+
+## [剑指 Offer II 077. 链表排序](https://leetcode-cn.com/problems/7WHec2/)
+
+**法一：自顶向下归并排序**
+
+1. 找到链表中点（这里可以使用快慢指针），将链表分为两个子链表
+2. 对两个子链表分别排序
+3. 将两个排序后的子链表合并，得到完整的链表
+
+可以用递归实现上述过程，递归终止条件为链表为空或者链表只包含一个节点
+
+```c++
+class Solution {
+public:
+    ListNode* sortList(ListNode* head) {
+        return sortList(head, nullptr);
+    }
+
+    ListNode* sortList(ListNode* head, ListNode* tail) {
+        if (head == nullptr) {
+            return head;
+        }
+        if (head->next == tail) {
+            head->next = nullptr;
+            return head;
+        }
+        ListNode* slow = head, *fast = head;
+        while (fast != tail) {
+            slow = slow->next;
+            fast = fast->next;
+            if (fast != tail) {
+                fast = fast->next;
+            }
+        }
+        ListNode* mid = slow;
+        return merge(sortList(head, mid), sortList(mid, tail));
+    }
+
+    ListNode* merge(ListNode* head1, ListNode* head2) {
+        ListNode* dummyHead = new ListNode(0);
+        ListNode* temp = dummyHead, *temp1 = head1, *temp2 = head2;
+        while (temp1 != nullptr && temp2 != nullptr) {
+            if (temp1->val <= temp2->val) {
+                temp->next = temp1;
+                temp1 = temp1->next;
+            } else {
+                temp->next = temp2;
+                temp2 = temp2->next;
+            }
+            temp = temp->next;
+        }
+        if (temp1 != nullptr) {
+            temp->next = temp1;
+        } else if (temp2 != nullptr) {
+            temp->next = temp2;
+        }
+        return dummyHead->next;
+    }
+};
+```
+
+时间复杂度是`O(nlogn)`
+
+空间复杂度是`O(logn)`，主要是递归产生的栈空间调用
+
+## [剑指 Offer II 078. 合并排序链表](https://leetcode-cn.com/problems/vvXgSW/)
+
+**分治**
+
+```c++
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* mergeTwoLists(ListNode *a, ListNode *b) {
+        if ((!a) || (!b)) return a ? a : b;
+        ListNode head, *tail = &head, *aPtr = a, *bPtr = b;
+        while (aPtr && bPtr) {
+            if (aPtr->val < bPtr->val) {
+                tail->next = aPtr; aPtr = aPtr->next;
+            } else {
+                tail->next = bPtr; bPtr = bPtr->next;
+            }
+            tail = tail->next;
+        }
+        tail->next = (aPtr ? aPtr : bPtr);
+        return head.next;
+    }
+
+    ListNode* merge(vector <ListNode*> &lists, int l, int r) {
+        if (l == r) return lists[l];
+        if (l > r) return nullptr;
+        int mid = (l + r) >> 1;
+        ListNode* a = merge(lists, l, mid);
+        ListNode* b = merge(lists, mid + 1, r);
+        return mergeTwoLists(a, b);
+    }
+
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        return merge(lists, 0, lists.size() - 1);
+    }
+};
+```
+
+# 回溯
+
+## [剑指 Offer II 079. 所有子集](https://leetcode-cn.com/problems/TVdhkn/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(vector<int>& nums, int startIndex){
+        res.push_back(path);
+        for(int i = startIndex; i < nums.size(); i++){
+            path.push_back(nums[i]);
+            backTracking(nums,i+1);
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> subsets(vector<int>& nums) {
+        backTracking(nums,0);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 080. 含有 k 个元素的组合](https://leetcode-cn.com/problems/uUsW3B/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(int n, int k,int startIndex){
+        if(path.size() == k){
+            res.push_back(path);
+            return;
+        }
+        for(int i = startIndex; i <= n; i++){
+            path.push_back(i);
+            backTracking(n,k,i + 1);
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> combine(int n, int k) {
+        backTracking(n,k,1);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 081. 允许重复选择元素的组合](https://leetcode-cn.com/problems/Ygoe9J/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(vector<int>& candidates, int target, int sum, int startIndex){
+        if(sum == target){
+            res.push_back(path);
+            return;
+        }
+        if(sum > target) return;
+        for(int i = startIndex; i < candidates.size(); i++){
+            path.push_back(candidates[i]);
+            sum += candidates[i];
+            backTracking(candidates,target,sum,i);
+            sum -= candidates[i];
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+        backTracking(candidates,target,0,0);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 082. 含有重复元素集合的组合](https://leetcode-cn.com/problems/4sjJUc/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(vector<int>& candidates, int target, int sum, int startIndex, vector<bool>& used){
+        if(sum == target){
+            res.push_back(path);
+            return;
+        }
+        if(sum > target) return;
+        for(int i = startIndex; i < candidates.size(); i++){
+            if(i > 0 && candidates[i] == candidates[i-1] && used[i-1] == false)
+                continue;
+            path.push_back(candidates[i]);
+            sum += candidates[i];
+            used[i] = true;
+            backTracking(candidates,target,sum,i + 1,used);
+            used[i] = false;
+            sum -= candidates[i];
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+        sort(candidates.begin(),candidates.end());
+        vector<bool> used(candidates.size(),false);
+        backTracking(candidates,target,0,0,used);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 083. 没有重复元素集合的全排列](https://leetcode-cn.com/problems/VvJkup/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(vector<int>& nums,vector<bool>& used){
+        if(path.size() == nums.size()){
+            res.push_back(path);
+            return;
+        }
+
+        for(int i = 0; i < nums.size(); i++){
+            if(used[i]) continue;
+            path.push_back(nums[i]);
+            used[i] = true;
+            backTracking(nums,used);
+            used[i] = false;
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<bool> used(nums.size(),false);
+        backTracking(nums,used);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 084. 含有重复元素集合的全排列 ](https://leetcode-cn.com/problems/7p8L0Z/)
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void backTracking(vector<int>& nums,vector<bool>& used){
+        if(path.size() == nums.size()){
+            res.push_back(path);
+            return;
+        }
+
+        for(int i = 0; i < nums.size(); i++){
+            if(used[i]) continue;
+            if(i > 0 && nums[i] == nums[i-1] && used[i-1] == false) continue;
+            path.push_back(nums[i]);
+            used[i] = true;
+            backTracking(nums,used);
+            used[i] = false;
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        sort(nums.begin(),nums.end());
+        vector<bool> used(nums.size(),false);
+        backTracking(nums,used);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 085. 生成匹配的括号](https://leetcode-cn.com/problems/IDBivT/)
+
+```c++
+class Solution {
+public:
+    vector<string> res;
+    string path;
+    void backTracking(int n, int left, int right){
+        if(path.size() == 2 * n){
+            res.push_back(path);
+        }
+        if(right > left) return;
+        if(left < n){
+            path += '(';
+            backTracking(n,left + 1, right);
+            path.pop_back();
+        }
+        if(right < left){
+            path += ')';
+            backTracking(n, left, right + 1);
+            path.pop_back();
+        }
+    }
+    vector<string> generateParenthesis(int n) {
+        backTracking(n,0,0);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 086. 分割回文子字符串](https://leetcode-cn.com/problems/M99OJA/)
+
+```c++
+class Solution {
+public:
+    vector<vector<string>> res;
+    vector<string> path;
+    bool Ifpronme(const string& s, int i, int j)
+    {
+        if(i == j) return true;
+        while(i < j)
+        {
+            if(s[i] != s[j]){
+                return false;
+            }else{
+                i++;
+                j--;
+            }
+        }
+        return true;
+    }
+    void backTracking(string s, int startIndex)
+    {
+        if(startIndex >= s.size()){
+            res.push_back(path);
+            return;
+        }
+        for(int i = startIndex; i < s.size(); i++)
+        {
+            if(Ifpronme(s,startIndex,i)){
+                string cur = s.substr(startIndex,i-startIndex+1);
+                path.push_back(cur);
+                backTracking(s,i+1);
+                path.pop_back();
+            }
+        }
+    }
+    vector<vector<string>> partition(string s) {
+        backTracking(s,0);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 087. 复原 IP ](https://leetcode-cn.com/problems/0on3uN/)
+
+```c++
+class Solution {
+public:
+    vector<string> res;
+    bool isValid(const string& s, int start, int end)
+    {
+        if(start > end) return false;
+        if(s[start] == '0' && start != end) return false;
+        int num = 0;
+        for(int i = start; i <= end; i++)
+        {
+            if(s[i] > '9' || s[i] <'0') return false;
+            num = num * 10 + s[i] - '0';
+            if(num > 255) return false;
+        }
+        return true;
+    }
+    void backtracking(string& s, int pointNum, int startIndex)
+    {
+        if(pointNum == 3){
+            //判断最后一段字符是否满足条件
+            if(isValid(s,startIndex,s.size() - 1)){
+                res.push_back(s);
+            }
+            //如果最后一段不满足条件，直接返回
+            //如果把return放在上面的if语句中，则会超时
+            return;
+        }
+        for(int i = startIndex; i < s.size() ;i++)
+        {
+            if(isValid(s,startIndex,i)){
+                s.insert(s.begin() + i + 1,'.');
+                pointNum++;
+                backtracking(s,pointNum,i + 2);
+                pointNum--;
+                s.erase(s.begin() + i + 1);
+            }else{
+                break;
+            }
+        }
+    }
+
+    vector<string> restoreIpAddresses(string s) {
+        backtracking(s, 0, 0);
+        return res;
+    }
+};
+```
+
+# 动态规划
 

@@ -4395,3 +4395,804 @@ public:
 
 # 动态规划
 
+## [剑指 Offer II 088. 爬楼梯的最少成本](https://leetcode-cn.com/problems/GzCJIP/)
+
+`dp[i]`:爬到第 `i` 阶所需的最小体力
+
+- 初始化：可以从下标为 0 或 1 的位置开始爬，即爬到这两个位置不需要花费体力
+  - `dp[0] = 0;`
+  - `dp[1] = 0;`
+- 转移方程：每个台阶`i`可以由`i-1`或`i-2`一步爬到，每次爬的过程取体力花费最小的方案
+  - `dp[i] = min(dp[i-1] + cost[i-1], dp[i-2] + cost[i-2])`
+
+```c++
+class Solution {
+public:
+    int minCostClimbingStairs(vector<int>& cost) {
+        int n = cost.size();
+        vector<int> dp(n+1,0);
+        dp[0] = 0;
+        dp[1] = 0;
+        for(int i = 2; i <= n; i++){
+            dp[i] = min(dp[i-1] + cost[i-1],dp[i-2] + cost[i-2]);
+        }
+        return dp[n];
+    }
+};
+```
+
+## [剑指 Offer II 089. 房屋偷盗](https://leetcode-cn.com/problems/Gu0c2T/)
+
+`dp[i]:`下标从0开始，从`0 ~ i `的房屋中可以偷窃的最大金额
+
+- 初始化：
+  - `dp[0] = nums[0]`
+  - `dp[1] = max(nums[0],nums[1])`
+- 状态转移：相邻房屋不可以偷，因此对于房屋`i`，有两种状态，一是偷该房屋，那么就不能偷`i-1`,而是不考虑该房屋，从`0~i-1`中考虑，即
+  - `dp[i] = max(dp[i-2] + nums[i], dp[i-1])`
+
+```c++
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        int n = nums.size();
+        if(n == 1) return nums[0];
+        vector<int> dp(n,0);
+        dp[0] = nums[0];
+        dp[1] = max(nums[0],nums[1]);
+        for(int i = 2; i < n; i++){
+            dp[i] = max(dp[i-2] + nums[i], dp[i-1]);
+        }
+        return dp[n-1];
+    }
+};
+```
+
+## [剑指 Offer II 090. 环形房屋偷盗](https://leetcode-cn.com/problems/PzWKhm/)
+
+与[剑指 Offer II 089. 房屋偷盗](https://leetcode-cn.com/problems/Gu0c2T/)类似，但是考虑到是环形，即多了一种情形，即首部房屋与尾部房屋不可以同时偷，因此
+
+- 考虑偷头部房屋，则不能考虑尾部房屋，即在`0~nums.size()-2`中偷
+- 考虑偷尾部房屋，则不能考虑头部房屋，即在`1~nums.size()-1`中偷
+
+```c++
+class Solution {
+public:
+    int rob(vector<int>& nums, int i , int j) {
+        int n = nums.size();
+        if(i == j) return nums[i];
+        vector<int> dp(n,0);
+        dp[i] = nums[i];
+        dp[i+1] = max(nums[i],nums[i+1]);
+        for(int k = i+2; k <= j; k++){
+            dp[k] = max(dp[k-2] + nums[k], dp[k-1]);
+        }
+        return dp[j];
+    }
+    int rob(vector<int>& nums) {
+        if(nums.size() == 1) return nums[0];
+        return max(rob(nums,0,nums.size() - 2), rob(nums,1,nums.size() - 1));
+    }
+};
+```
+
+## [剑指 Offer II 091. 粉刷房子](https://leetcode-cn.com/problems/JEj789)
+
+每个房子可以被粉刷成三种颜色，并且相邻房子的颜色不可以相同，即每个房子有三种状态，用二维数组分别表示这三种状态
+
+- `dp[i][0]`：下标为`i`的房子粉刷为红色时，`0~i`栋房子所需的最小花销
+  - 当前房子为红色时，前一栋房子不可以为红色
+  - `dp[i][0] = min(dp[i-1][1], dp[i-1][2]) + costs[i][0]`
+- `dp[i][1]`：下标为`i`的房子粉刷为绿色时，`0~i`栋房子所需的最小花销
+  - `dp[i][1] = min(dp[i-1][0], dp[i-1][2]) + costs[i][1]`
+- `dp[i][2]`：下标为`i`的房子粉刷为蓝色时，`0~i`栋房子所需的最小花销
+  - `dp[i][2] = min(dp[i-1][0], dp[i-1][1]) + costs[i][2]`
+
+```c++
+class Solution {
+public:
+    int minCost(vector<vector<int>>& costs) {
+        //房子数量
+        int n = costs.size();
+        if(n == 1) return min(costs[0][0], min(costs[0][1],costs[0][2]));
+        //相邻房屋颜色不同，每一个房子有三种状态
+        vector<vector<int>> dp(n,vector<int>(3,0));
+        dp[0][0] = costs[0][0];
+        dp[0][1] = costs[0][1];
+        dp[0][2] = costs[0][2];
+
+        for(int i = 1; i < n; i++){
+            dp[i][0] = min(dp[i-1][1], dp[i-1][2]) + costs[i][0];
+            dp[i][1] = min(dp[i-1][0], dp[i-1][2]) + costs[i][1];
+            dp[i][2] = min(dp[i-1][0], dp[i-1][1]) + costs[i][2];
+        }
+
+        return min(dp[n-1][0], min(dp[n-1][1], dp[n-1][2]));
+    }
+};
+```
+
+
+
+## [剑指 Offer II 092. 翻转字符](https://leetcode-cn.com/problems/cyJERH/)
+
+每个字符有两种状态，即 0 或 1，我们可以考虑将当前字符分别变为0 或 1所需的花销，然后取最小值，因此，定义动规数组如下：
+
+- `dp[i][0]`：将`s[i]`变为 0 所需的最小花销
+  - 若要满足递增条件，则前面的字符均要变为 0
+  - `dp[i][0] = dp[i-1][0] + (s[i] == '1' ? 1 : 0)`
+- `dp[i][1]`：将`s[i]`变为 1 所需的最小花销
+  - 若要满足递增条件，则前面的字符可以全为 0 或者全为1，因此取两者中的最小值
+  - `dp[i][1] = min(dp[i-1][0], dp[i-1][1]) + (s[i] == '1' ? 0 : 1)`
+
+```c++
+class Solution {
+public:
+    int minFlipsMonoIncr(string s) {
+        int n = s.size();
+        //dp[i][0]表示前i个元素，最后一个元素为0的最小翻转次数；
+        //dp[i][1]表示前i个元素，最后一个元素为1的最小翻转次数
+        vector<vector<int>> dp(n,vector<int>(2,0));
+        dp[0][0] = s[0] == '0' ? 0 : 1;
+        dp[0][1] = s[0] == '1' ? 0 : 1;
+
+        for(int i = 1; i < n; i++){
+            dp[i][0] = dp[i-1][0] + (s[i] == '1' ? 1 : 0);
+            dp[i][1] = min(dp[i-1][0], dp[i-1][1]) + (s[i] == '1' ? 0 : 1);
+        }
+
+        return min(dp[n-1][0], dp[n-1][1]);
+    }
+};
+```
+
+**可以利用滚动数组优化**
+
+```c++
+class Solution {
+public:
+    int minFlipsMonoIncr(string s) {
+        int n = s.size();
+        //dp[i][0]表示前i个元素，最后一个元素为0的最小翻转次数；
+        //dp[i][1]表示前i个元素，最后一个元素为1的最小翻转次数
+        vector<int> dp(2,0);
+        dp[0] = s[0] == '0' ? 0 : 1;
+        dp[1] = s[0] == '1' ? 0 : 1;
+
+        for(int i = 1; i < n; i++){
+            //一定要先计算dp[1]，因为dp[1]会用到上一层的dp[0]
+            //若先计算dp[0]，计算dp[1]时用的就是当前层的dp[0]
+            dp[1] = min(dp[0], dp[1]) + (s[i] == '1' ? 0 : 1);
+            dp[0] = dp[0] + (s[i] == '1' ? 1 : 0);
+        }
+
+        return min(dp[0], dp[1]);
+    }
+};
+```
+
+## [剑指 Offer II 093. 最长斐波那契数列](https://leetcode-cn.com/problems/Q91FMA/)
+
+`dp[i][j]`:在给定数组`A[]`中，以`A[i],A[j]`为结尾两元素的斐波拉契数列的最大长度
+
+- 即在`A[0]...A[i]..A[j]..`中，斐波拉契数列形式为`....A[i],A[j]`
+
+**状态转移方程：**
+
+- 考虑`A[i]`之前的数字中是否存在一个数`A[k]`，使得`A[k] + A[i] = A[j]`
+- 即`dp[i][j] = dp[k][i] + 1 ，其中A[k]满足 A[k] + A[i] = A[j]`
+
+**初始化：**
+
+- 任意两个元素都是有效的斐波拉契数列，因此初始化`dp[i][j] = 2`，其中`i~(0,n), j~(i,n)`
+
+**代码编写：**
+
+- 由于给定数组是一个严格递增的序列，因此我们不需要从头到尾去遍历寻找`A[k]`,我们可以利用一个哈希表来快速寻找
+
+```c++
+class Solution {
+public:
+    int lenLongestFibSubseq(vector<int>& arr) {
+        int res = 0;
+        int n = arr.size();
+        unordered_map<int,int> hash;
+        //建立映射
+        for(int i = 0; i < arr.size(); i++) hash[arr[i]] = i;
+        vector<vector<int>> dp(n,vector<int>(n,0));
+        //初始化
+        for(int i = 0; i < n; i++){
+            for(int j = i+1; j < n; j++)
+                dp[i][j] = 2;
+        }
+        dp[0][0] = 1;
+        for(int i = 1; i < n; i++){
+            for(int j = i + 1; j < n; j++){
+                if(hash.find(arr[j] - arr[i]) != hash.end()){
+                    int k = hash[arr[j] - arr[i]];
+                    if(k < i)
+                    	dp[i][j] = max(dp[i][j], dp[k][i] + 1);
+                    res = max(res, dp[i][j]);
+                }
+            }
+        }
+        //题目要求斐波拉契数列长度必须大于等于3
+        return res > 2 ? res : 0;
+    }
+};
+```
+
+## [剑指 Offer II 094. 最少回文分割](https://leetcode.cn/problems/omKAoA/)
+
+`dp[i]:`给定字符串中前`0~i`个字符组成的子字符串分割成回文子串的最小分割数
+
+- 对于`dp[i]`,寻找一个最小的`dp[j]`，其中`0 <= j < i`,则`dp[i] = dp[j] + 1`
+  - `s[j+1,...,i]`为回文串
+- `s[0~i]`可能本身就是一个回文串，此时`dp[i] = 0`
+- 借助[647. 回文子串](https://leetcode-cn.com/problems/palindromic-substrings/)，记录下任意子字符串是否为回文串
+
+```c++
+class Solution {
+public:
+    int minCut(string s) {
+        int n = s.size();
+        vector<vector<bool>> dp(n,vector<bool>(n,false));
+        for(int i = n-1; i >= 0; i--){
+            for(int j = i; j < n; j++){
+                if(s[i] == s[j]){
+                    if( j - i <= 1) dp[i][j] = true;
+                    else{
+                        dp[i][j] = dp[i+1][j-1];
+                    }
+                }
+            }
+        }
+
+        vector<int> f(n,INT_MAX);
+        for(int i = 0; i < n; i++){
+            //如果本身是回文串
+            if(dp[0][i]){
+                f[i] = 0;
+            }else{
+                //如果本身不是回文串，则去寻找最小f[j]
+                for(int j = 0; j < i; j++)
+                    if(dp[j + 1][i])
+                        f[i] = min(f[i], f[j] + 1);
+            }
+        }
+        return f[n-1];
+    }
+};
+```
+
+## [剑指 Offer II 095. 最长公共子序列](https://leetcode.cn/problems/qJnOS7/)
+
+`dp[i][j]`:`text1`前`i`个字符中与` text2`前`j`个字符中的最长公共子序列
+
+```c++
+class Solution {
+public:
+    int longestCommonSubsequence(string text1, string text2) {
+        int m = text1.size();
+        int n = text2.size();
+        //dp[i][j]: text1前i个字符中与 text2前j个字符中的最长公共子序列
+        vector<vector<int>> dp(m+1,vector<int>(n+1,0));
+        for(int i = 1; i <= m; i++){
+            for(int j = 1; j <= n; j++){
+                if(text1[i-1] == text2[j-1])
+                    dp[i][j] = dp[i-1][j-1] + 1;
+                else{
+                    dp[i][j] = max(dp[i-1][j], dp[i][j-1]);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+};
+```
+
+## [剑指 Offer II 096. 字符串交织](https://leetcode.cn/problems/IY6buf/)*
+
+
+
+## [剑指 Offer II 097. 子序列的数目](https://leetcode.cn/problems/21dk04/)
+
+- ```c++
+  dp[i][j]:以i-1为结尾的s子序列中出现以j-1为结尾的t的个数为dp[i][j]。
+  ```
+
+- 这一类问题，基本是要分析两种情况
+
+  - s[i - 1] 与 t[j - 1]相等
+  - s[i - 1] 与 t[j - 1] 不相等
+
+```c++
+当s[i - 1] 与 t[j - 1]相等时，dp[i][j]可以有两部分组成。
+
+一部分是用s[i - 1]来匹配，那么个数为dp[i - 1][j - 1]。
+
+一部分是不用s[i - 1]来匹配，个数为dp[i - 1][j]。
+例如： s：bagg 和 t：bag ，s[3] 和 t[2]是相同的，但是字符串s也可以不用s[3]来匹配，即用s[0]s[1]s[2]组成的bag。
+
+当然也可以用s[3]来匹配，即：s[0]s[1]s[3]组成的bag。
+    
+所以当s[i - 1] 与 t[j - 1]相等时，dp[i][j] = dp[i - 1][j - 1] + dp[i - 1][j];
+
+当s[i - 1] 与 t[j - 1]不相等时，dp[i][j]只有一部分组成，不用s[i - 1]来匹配，即：dp[i - 1][j]
+
+所以递推公式为：dp[i][j] = dp[i - 1][j];
+```
+
+**该题还要注意整型溢出的问题，使用长整型**
+
+```c++
+  vector<vector<uint64_t>> dp(ns + 1,vector<uint64_t>(nt + 1,0));
+```
+
+```c++
+class Solution {
+public:
+    int numDistinct(string s, string t) {
+        int ns = s.size();
+        int nt = t.size();
+        vector<vector<uint64_t>> dp(ns + 1,vector<uint64_t>(nt + 1,0));
+        for(int i = 0; i <= ns; i++) dp[i][0] = 1;
+        for(int i = 1; i <= nt; i++) dp[0][i] = 0;
+
+        for(int i = 1; i <= ns; i++){
+            for(int j = 1; j <= nt; j++){
+                if(s[i-1] == t[j-1])
+                    dp[i][j] = dp[i-1][j-1] + dp[i-1][j];
+                else
+                    dp[i][j] = dp[i-1][j];
+            }
+        }
+        return dp[ns][nt];
+    }
+};
+```
+
+
+
+## [剑指 Offer II 098. 路径的数目](https://leetcode.cn/problems/2AoeFn/)
+
+`dp[i][j]`:到达坐标`(i,j)`处有`dp[i][j]`种路径
+
+**转移方程：**
+
+- 考虑到只能向右或向下移动，对于每一个位置，只能从起上方或左方移动到
+- 因此，到达指定点`(i,j)`的路径可以分为从上方到达以及从左方到达两种
+- `dp[i][j] = dp[i-1][j] + dp[i][j-1]`
+
+**初始化:**
+
+- 横坐标或者纵坐标为`0`时，只能从其左边或者右边到达，全初始化为`1`
+
+```c++
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        vector<vector<int>> dp(m,vector<int>(n,0));
+        for(int i = 0; i < n; i++) dp[0][i] = 1;
+        for(int i = 1; i < m; i++) dp[i][0] = 1;
+
+        for(int i = 1; i < m; i++){
+            for(int j = 1; j < n; j++){
+                dp[i][j] = dp[i-1][j] + dp[i][j-1];
+            }
+        }
+        return dp[m-1][n-1];
+    }
+};
+```
+
+
+
+## [剑指 Offer II 099. 最小路径之和](https://leetcode.cn/problems/0i0mDW/)
+
+`dp[i][j]`:到达坐标`(i,j)`处所需花费的最小值
+
+```c++
+class Solution {
+public:
+    int minPathSum(vector<vector<int>>& grid) {
+        int m = grid.size();
+        int n = grid[0].size();
+
+        vector<vector<int>> dp(m,vector<int>(n,0));
+        dp[0][0] = grid[0][0];
+        for(int i = 1; i < n; i++) dp[0][i] = grid[0][i] + dp[0][i-1];
+        for(int j = 1; j < m; j++) dp[j][0] = grid[j][0] + dp[j-1][0];
+
+        for(int i = 1; i < m; i++){
+            for(int j = 1; j < n; j++){
+                dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + grid[i][j];
+            }
+        }
+        return dp[m-1][n-1];
+    }
+};
+```
+
+## [剑指 Offer II 100. 三角形中最小路径之和](https://leetcode.cn/problems/IlPe0q/)
+
+**将三角形看作矩形的下半边**
+
+|  2   |      |      |      |
+| :--: | :--: | :--: | :--: |
+|  3   |  4   |      |      |
+|  6   |  5   |  7   |      |
+|  4   |  1   |  8   |  3   |
+
+`dp[i][j]`:到达坐标`(i,j)`的最小路径
+
+**状态转移：**
+
+- 每一步只能移动到下一行中相邻的节点上，即`(i,j)`只能移动到`(i+1,j)`或者`(i+1,j+1)`
+- `dp[i][j] = min(dp[i-1][j], dp[i-1][j-1]) + triangle[i][j]`
+
+**初始化：**
+
+- 对于左边界上的点，即纵坐标全为`0`的点，只能由上方的点到达
+  - `dp[i][0] = dp[i-1][0] + triangle[i-1][0]`
+- 对于对角线上的点，即横纵坐标相等的点，只能由上一个的对角线点到达
+  - `dp[i][i] = dp[i-1][i-1] + triangle[i][i]`
+
+**结果：**
+
+遍历到达最后一行节点的所有路径，返回最小值
+
+```c++
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& triangle) {
+        int n = triangle.size();
+        //dp[i][j] = min(dp[i-1][j],dp[i-1][j-1]) + triangle[i][j]
+        vector<vector<int>> dp(n,vector<int>(n,0));
+        dp[0][0] = triangle[0][0];
+        for(int i = 1; i < n; i++) dp[i][0] = dp[i-1][0] + triangle[i][0];
+        for(int i = 1; i < n; i++) dp[i][i] = dp[i-1][i-1] + triangle[i][i];
+
+        for(int i = 2; i < n; i++){
+            for(int j = 1; j < i ; j++){
+                dp[i][j] = min(dp[i-1][j], dp[i-1][j-1]) + triangle[i][j];
+            }
+        }
+
+        int res = INT_MAX;
+        for(auto d : dp[n-1]) res = min(res,d);
+        return res;
+
+    }
+};
+```
+
+**可以利用滚动数组优化**
+
+```c++
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& triangle) {
+        int n = triangle.size();
+        vector<int> dp(n,0);
+        dp[0] = triangle[0][0];
+
+        for(int i = 1; i < n; i++){
+            for(int j = i; j >= 0; j--){
+                //处理纵坐标为 0 的元素，只能从上一个点到达
+                if(j == 0){
+                    dp[j] = dp[j] + triangle[i][j];
+                }
+                //处理对角线元素，只能从上一个对角线元素到达
+                else if(j == i)
+                    dp[j] = dp[j-1] + triangle[i][j];
+                else
+                    dp[j] = min(dp[j], dp[j-1]) + triangle[i][j];
+            }
+        }
+
+        int res = INT_MAX;
+        for(auto d : dp) res = min(res,d);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 101. 分割等和子集](https://leetcode.cn/problems/NUPfPr/)
+
+### 二维数组
+
+```c++
+class Solution {
+public:
+    bool canPartition(vector<int>& nums) {
+        int sum = 0;
+        int n = nums.size();
+        for(auto x : nums)  sum += x;
+        if(sum % 2 == 1) return false;
+        int con = sum / 2;
+
+        vector<vector<int>> dp(n+1,vector<int>(con+1,0));
+
+        for(int i = nums[0]; i <= con; i++){
+            dp[0][i] = nums[0];
+        }
+    
+        for(int i = 1; i < n; i++){
+            for(int j = 0; j <= con; j++){  
+                if( j >= nums[i] )
+                    dp[i][j] = max(dp[i-1][j], dp[i-1][j-nums[i]] + nums[i]);
+                else
+                    dp[i][j] = dp[i-1][j];  
+            }
+        }
+        if(dp[n-1][con] == con) return true;
+        return false;
+    }
+};
+
+class Solution {
+public:
+    bool canPartition(vector<int>& nums) {
+        int sum = 0;
+        for (auto& n : nums) {
+            sum += n;
+        }
+        if ((sum & 1) != 0) {
+            return false;
+        }
+
+        int target = sum >> 1;
+        vector<vector<bool>> dp(nums.size() + 1, vector<bool>(target + 1, false));
+        dp[0][0] = true;
+        for (int i = 1; i <= nums.size(); ++i) {
+            for (int j = 0; j <= target; ++j) {
+                dp[i][j] = dp[i - 1][j];
+                if (!dp[i][j] && j >= nums[i - 1]) {
+                    dp[i][j] = dp[i - 1][j - nums[i - 1]];
+                }
+            }
+        }
+        return dp[nums.size()][target];
+    }
+};
+
+```
+
+### 一维数组
+
+```c++
+class Solution {
+public:
+    bool canPartition(vector<int>& nums) {
+        int sum = 0;
+        int n = nums.size();
+        for(auto x : nums)  sum += x;
+        if(sum % 2 == 1) return false;
+        int con = sum / 2;
+
+        vector<int> dp(con+1,0);
+
+        for(int i = 0; i < n; i++){
+            for(int j = con; j >= nums[i]; j--){  
+                dp[j] = max(dp[j],dp[j-nums[i]] + nums[i]);
+            }
+        }
+        if(dp[con] == con) return true;
+        return false;
+    }
+};
+```
+
+
+
+## [剑指 Offer II 102. 加减的目标值](https://leetcode.cn/problems/YaVDxD/)
+
+- 背包容量为 x = (target + sum) / 2
+- 物品体积以及价值均为num[i]
+- 物品数量为nums.size()
+- dp[i]表示填满容量为i的背包有dp[i]种方法
+- 递归公式：
+
+```
+因为填满容量为j-nums[i]的背包有dp[j-nums[i]]种方法
+所以遍历到nums[i]时，填满容量为j的背包的方法就有dp[j-nums[i]]种方法，
+即在填满容量为j-nums[i]的背包的每一种方法上在加上一个nums[i]
+
+因此 dp[j] += dp[j-nums[i]];
+
+```
+
+**该公式在利用背包解决排列组合问题时经常会用到**
+
+```c++
+class Solution {
+public:
+    int findTargetSumWays(vector<int>& nums, int S) {
+        int sum = 0;
+        for (int i = 0; i < nums.size(); i++) sum += nums[i];
+        if (abs(S) > sum) return 0; // 此时没有方案
+        if ((S + sum) % 2 == 1) return 0; // 此时没有方案
+        int bagSize = (S + sum) / 2;
+        vector<int> dp(bagSize + 1, 0);
+        dp[0] = 1;
+        for (int i = 0; i < nums.size(); i++) {
+            for (int j = bagSize; j >= nums[i]; j--) {
+                dp[j] += dp[j - nums[i]];
+            }
+        }
+        return dp[bagSize];
+    }
+};
+```
+
+**二维数组**
+
+```c++
+class Solution {
+public:
+    /*
+        x - y = target
+        x + y = sum;
+        x = (sum + target) / 2;
+    */
+    int findTargetSumWays(vector<int>& nums, int target) {
+        int sum = 0;
+        int n = nums.size();
+        for(auto num : nums) sum += num;
+        if((sum + target) % 2) return 0;
+        int k = sum + target >> 1;
+        vector<vector<int>> dp(n+1, vector<int>(k+1,0));
+        dp[0][0] = 1;
+        for(int i = 1; i <= n; i++){
+            for(int j = 0; j <= k; j++){
+                dp[i][j] += dp[i-1][j];
+                if(j >= nums[i-1])
+                    dp[i][j] += dp[i-1][j - nums[i-1]];
+            }
+        }
+        return dp[n][k];
+    }
+};
+```
+
+## [剑指 Offer II 103. 最少的硬币数目](https://leetcode.cn/problems/gaM7Ch/)
+
+**二维数组**
+
+`dp[i][j]`:从前 i 个 物品中填满容量为 j 的背包所需的最少物品个数
+
+**状态转移：**
+
+- 对于当前物品`coins[j]`,可以考虑将其加入背包与不加入背包两种情况
+  - 加入背包`dp[i][j] = dp[i][j-coins[i-1]] + 1`
+  - 不加入背包`dp[i][j] = dp[i-1][j]`
+- 取两者中的最小值
+
+**初始化**
+
+- 因为求得是最少硬币数，所以初始化时应将数组内元素初始化为一个较大值
+
+- 对于背包容量为0的情况，最少硬币数目为0
+
+- ```c++
+  vector<vector<int>> dp(n+1,vector<int>(amount+1,amount+1));
+  for(int i = 0; i <= coins.size(); i++){
+  	dp[i][0] = 0;
+  }
+  ```
+
+```c++
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        int n = coins.size();
+        vector<vector<int>> dp(n+1,vector<int>(amount+1,amount+1));
+        for(int i = 0; i <= coins.size(); i++){
+            dp[i][0] = 0;
+        }
+        for(int i = 1; i <= n; i++){
+            for(int j = 1; j <= amount; j++){
+                if(j >= coins[i - 1]){
+                    dp[i][j] = min(dp[i - 1][j], 1 + dp[i][j - coins[i - 1]]);
+                }else{
+                    dp[i][j] = dp[i - 1][j];
+                }
+            }
+        }
+        return dp[n][amount] == amount+1 ? -1 : dp[n][amount];
+    }
+};
+```
+
+**一维**
+
+**该题和纯背包问题不同，纯完全背包是能否凑成总金额，而本题是要求凑成总金额的个数**
+
+并且题目描述中是凑成总金额的硬币**组合数**，**而非排列数**，排列和组合的区别在学习回溯算法的时候已经区别过了
+
+```c++
+class Solution {
+public:
+    int change(int amount, vector<int>& coins) {
+        vector<int> dp(amount+1,0);
+        dp[0] = 1;
+        for(int i = 0; i < coins.size(); i++){
+            for(int j = coins[i]; j <= amount; j++){
+                dp[j] += dp[j-coins[i]];
+            }
+        }
+        return dp[amount];
+    }
+};
+```
+
+### 特别注意：
+
+**该题对于遍历顺序有特殊要求，他只能遍历物品在外，遍历容积在内**
+
+因为纯完全背包求得是否凑成总和，和凑成总和的元素有没有顺序没关系，即：有顺序也行，没有顺序也行！
+
+而本题要求凑成总和的组合数，元素之间要求没有顺序。
+
+所以纯完全背包是能凑成总和就行，不用管怎么凑的。
+
+本题是求凑出来的方案个数，且每个方案个数是为组合数。
+
+那么本题，两个for循环的先后顺序可就有说法了。
+
+我们先来看 外层for循环遍历物品（钱币），内层for遍历背包（金钱总额）的情况。
+
+代码如下：
+
+```cpp
+for (int i = 0; i < coins.size(); i++) { // 遍历物品
+    for (int j = coins[i]; j <= amount; j++) { // 遍历背包容量
+        dp[j] += dp[j - coins[i]];
+    }
+}
+```
+
+假设：coins[0] = 1，coins[1] = 5。
+
+那么就是先把1加入计算，然后再把5加入计算，得到的方法数量只有{1, 5}这种情况。而不会出现{5, 1}的情况。
+
+**所以这种遍历顺序中dp[j]里计算的是组合数！**
+
+如果把两个for交换顺序，代码如下：
+
+```c++
+for (int j = 0; j <= amount; j++) { // 遍历背包容量
+    for (int i = 0; i < coins.size(); i++) { // 遍历物品
+        if (j - coins[i] >= 0) dp[j] += dp[j - coins[i]];
+    }
+}
+```
+
+背包容量的每一个值，都是经过 1 和 5 的计算，包含了{1, 5} 和 {5, 1}两种情况。
+
+**此时dp[j]里算出来的就是排列数！**
+
+**例如，1 和 3 都在数组nums 中，计算 dp[4] 的时候，排列的最后一个元素可以是 1 也可以是 3，因此 dp[1] 和 dp[3] 都会被考虑到，即不同的顺序都会被考虑到。**
+
+## [剑指 Offer II 104. 排列的数目](https://leetcode.cn/problems/D0F0SV/)
+
+```c++
+class Solution {
+public:
+    int combinationSum4(vector<int>& nums, int target) {
+        vector<int> dp(target + 1, 0);
+        dp[0] = 1;
+
+        for (int i = 1; i <= target; ++i) {
+            for (auto& n : nums) {
+                if (i >= n && dp[i - n] <= INT_MAX - dp[i]) {
+                    dp[i] += dp[i - n];
+                }
+            }
+        }
+        return dp[target];
+    }
+};
+```
+

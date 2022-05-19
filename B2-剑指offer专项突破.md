@@ -4693,6 +4693,56 @@ public:
 
 ## [剑指 Offer II 096. 字符串交织](https://leetcode.cn/problems/IY6buf/)*
 
+**`dp[i][j]`:**
+
+- 字符串`s1`中前`i`个字符组成的子字符串(下标为`0~i-1`的子字符串)**(长度为`i`)**与字符串`s2`中前`j`个字符组成的子字符串(下标为`0~j-1`的子字符串)**(长度为`j`)**能否交织成目标字符串`s`中前`i+j`个字符组成的子字符串(下标为`0~i+j-1`)**(长度为`i + j `)**
+
+**状态转移：**
+
+- `s[i+j-1]`可能来自于`s1[i-1]`，也可能来自于`s2[j-1]`
+- 若`s[i+j-1] == s1[i-1]`，即`s[i+j-1]`来自于`s1[i-1]`
+  - 则对于目标字符串`s`中`0~i+j-2`的子字符串，其是否能由字符串`s1`中**下标为`0~i-2`**的子字符串**(长度为`i-1`)**与字符串`s2`中**下标为`0~j-1`**的子字符串**(长度为`j`)**交织而成，决定`dp[i][j]`是否为`true`
+  - `dp[i][j] = dp[i-1][j]`
+- 若`s[i+j-1] == s2[j-1]`，即`s[i+j-1]`来自于`s2[j-1]`
+  - 同上
+  - `dp[i][j] = dp[i][j-1]`
+- 综上：
+  - `dp[i][j] = (s[i+j-1] == s1[i-1] && dp[i-1][j]) || (s[i+j-1] == s2[j-1] && dp[i][j-1])`
+
+**初始化：**
+
+- `dp[0][0] = true`
+  - 即两个空字符串能否交织成空字符串，显然为真
+- `dp[i][0] = s[i-1] == s1[i-1] && dp[i-1][0]`
+  - 即当 `s2`为空时，只有当`s[i-1] == s1[i-1]`并且`dp[i-1][0] == true`时，`dp[i][0] = true`
+- `dp[0][i] = s[i-1] == s2[j-1] && dp[0][i-1]`
+  - 同上
+
+**代码：**
+
+```c++
+class Solution {
+public:
+    bool isInterleave(string s1, string s2, string s) {
+        if(s1.size() + s2.size() != s.size()) return false;
+        int n1 = s1.size(), n2 = s2.size();
+        vector<vector<int>> dp(n1+1, vector<int>(n2+1,false));
+        dp[0][0] = true;
+        //s[i-1] != s1[i-1]时直接跳出循环，后面的均为false
+        for(int i = 1; i <= n1 && s[i-1] == s1[i-1]; i++) dp[i][0] = true;
+        for(int i = 1; i <= n2 && s[i-1] == s2[i-1]; i++) dp[0][i] = true;
+
+        for(int i = 1; i <= n1; i++){
+            for(int j = 1; j <= n2; j++){
+                dp[i][j] = (s[i+j-1] == s1[i-1] && dp[i-1][j]) || (s[i+j-1] == s2[j-1] && dp[i][j-1]);
+            }
+        }
+
+        return dp[n1][n2];
+    }
+};
+```
+
 
 
 ## [剑指 Offer II 097. 子序列的数目](https://leetcode.cn/problems/21dk04/)
@@ -5192,6 +5242,1242 @@ public:
             }
         }
         return dp[target];
+    }
+};
+```
+
+# 图论DFS&BFS
+
+## [剑指 Offer II 105. 岛屿的最大面积](https://leetcode.cn/problems/ZL6zAn/)
+
+**遍历矩阵中每一个点，找到 1 时，深度优先遍历其上下左右四个方位，累加岛屿面积**
+
+```c++
+class Solution {
+public:
+    int dfs(vector<vector<int>>& grid, int i, int j, int m, int n){
+        if(i < 0 || i >= m || j < 0 || j >= n || grid[i][j] == 0) return 0;
+        int res = 1;
+        grid[i][j] = 0;
+
+        int dx[] = {0,1,0,-1};
+        int dy[] = {1,0,-1,0};
+        for(int k = 0; k < 4; k++){
+            int a = i + dx[k];
+            int b = j + dy[k];
+            if(a >= 0 && a < m && b >= 0 && b < n && grid[a][b] == 1){
+                res += dfs(grid,a,b,m,n);
+            }
+        }
+        return res;
+    }
+    int maxAreaOfIsland(vector<vector<int>>& grid) {
+        int m = grid.size();
+        if(!m) return 0;
+        int n = grid[0].size();
+        if(!n) return 0;
+        
+        int res = 0;
+        for(int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                if(grid[i][j] == 1)
+                    res = max(res, dfs(grid,i,j,m,n));
+            }
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 106. 二分图](https://leetcode.cn/problems/vEAB3K/)
+
+**染色法判断二分图**
+
+```c++
+class Solution {
+private:
+    static constexpr int UNCOLORED = 0;
+    static constexpr int RED = 1;
+    static constexpr int GREEN = 2;
+    vector<int> color;
+    bool valid;
+
+public:
+    void dfs(int node, int c, const vector<vector<int>>& graph) {
+        color[node] = c;
+        int cNei = (c == RED ? GREEN : RED);
+        for (int neighbor: graph[node]) {
+            if (color[neighbor] == UNCOLORED) {
+                dfs(neighbor, cNei, graph);
+                if (!valid) {
+                    return;
+                }
+            }
+            else{
+                if(color[neighbor] != cNei) {
+                    valid = false;
+                    return;
+                }
+            }
+        }
+    }
+
+    bool isBipartite(vector<vector<int>>& graph) {
+        int n = graph.size();
+        valid = true;
+        color.assign(n, UNCOLORED);
+        for (int i = 0; i < n && valid; ++i) {
+            if (color[i] == UNCOLORED) {
+                dfs(i, RED, graph);
+            }
+        }
+        return valid;
+    }
+};
+```
+
+## [剑指 Offer II 107. 矩阵中的距离](https://leetcode.cn/problems/2bCMpM/)
+
+**最短路径问题，以每个0作为起点，搜寻到每个1的最短路径**
+
+- 定义一个距离数组`dist[i][j]`:表示点`(i,j)`距离最近0的距离
+  - 初始化: 若`mat[i][j] == 0`，则`dist[i][j] = 0`，否则，`dist[i][j] = INT_MAX`
+- 以所有`mat[i][j] == 0`的点为起点，进行BFS，BFS通过队列实现
+  - 将所有`mat[i][j] == 0`的点`(i,j)`加入队列
+  - 取队列头，搜索其上下左右四个方向的点`(a,b)`
+  - 若`dist[a][b] == INT_MAX`,表示其还未被搜索过，故更新其为`dist[i][j] + 1`
+  - 确定`(a,b)`到0的最短距离以后，将`(a,b)`也作为起点加入队列
+- BFS保证每一轮搜索都将距离0最近的点的最短距离进行了更新
+  - 第一轮搜索距离为0的点(初始化)
+  - 第二轮搜索时，以第一轮的点为起点，搜索上下左右相邻点，此时搜索到点的距离必为1
+  - 第三轮搜索则是以第二轮搜索到的点为起点，此时搜索到的点距离必为2
+  - 以此类推
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> updateMatrix(vector<vector<int>>& mat) {
+        int m = mat.size();
+        int n = mat[0].size();
+        queue<pair<int,int>> q;
+        //距离数组
+        vector<vector<int>> dists(m,vector<int>(n,INT_MAX));
+        //初始化
+        for(int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                if(mat[i][j] == 0){
+                    dists[i][j] = 0;
+                    q.push({i,j});
+                }
+            }
+        }
+        int dx[] = {0,-1,0,1};
+        int dy[] = {1,0,-1,0};
+
+        while(!q.empty()){
+            int x = q.front().first;
+            int y = q.front().second;
+            q.pop();
+            for(int k = 0; k < 4; k++){
+                int a = x + dx[k];
+                int b = y + dy[k];
+                if(a < 0 || a >= m || b < 0 || b >= n) continue;
+                //若该点未搜索过
+                if(dists[a][b] == INT_MAX){
+                    dists[a][b] = dists[x][y] + 1;
+                    q.push({a,b});
+                }
+            }
+        }
+        return dists;
+    }
+};
+```
+
+## [剑指 Offer II 108. 单词演变](https://leetcode.cn/problems/om3reC/)
+
+### 单向BFS
+
+**建图：**
+
+- 若两单词可以相互演变，则两个单词之间存在一条边
+  - 演变：改变一个字母之后，两单词相同，即两单词对应位置上只有一个字母不同
+- 题意即**求解给定两单词的之间的最短路径**
+- 求解最短路径应用BFS
+
+**算法流程：**
+
+- 从`beginWord`开始搜寻
+- 每次找出与`beginWord`距离最近的单词
+  - 第一次找距离为1的单词
+  - 第二次找距离为2的单词
+- 直到找到`endWord`,此时层序遍历的层数即为路径
+
+```c++
+class Solution {
+public:
+    //寻找距离为1的单词，并将其加入队列
+    void getNeighbor(string word, vector<string>& wordList, unordered_map<string,int>& mp, queue<string>& q){
+        for(int i = 0; i < word.size(); i++){
+            char temp = word[i];
+            for(char ch = 'a'; ch <= 'z'; ch ++){
+                word[i] = ch;
+                if(ch != temp && mp.count(word)){
+                    q.push(word);
+                }
+            }
+            word[i] = temp;
+        }
+    }
+    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
+        //mp 记录当前节点是否被访问过
+        unordered_map<string,int> mp;
+        for(auto word : wordList) mp[word]++;
+        queue<string> q;
+        q.push(beginWord);
+        int level = 0;
+        while(!q.empty()){
+            int size = q.size();
+            level++;
+            for(int i = 0; i < size; i++){
+                string cur = q.front();
+                q.pop();
+                //j
+                mp.erase(cur);
+                if(cur == endWord){
+                    return level;
+                }
+                getNeighbor(cur, wordList,mp,q);
+            }
+        }
+        return 0;
+    }
+};
+```
+
+### 双向BFS
+
+**从endWord与beginWord一起开始寻找**
+
+- 定义3个集合s1,s2,s3
+  - s1存储从beginWord开始BFS需要访问的节点
+  - s2存储从endWord开始BFS需要访问的节点
+  - s3存储与当前节点距离为1的节点，即当前节点的下一层需要访问的节点
+- 每次从s1,s2中选择数量少的集合，进行搜索，这样可以缩小搜索空间
+- 搜索时，若下一层单词在另一集合中出现了，说明两方向上有重合节点，该路径即为最短路径
+
+```c++
+class Solution {
+private:
+    bool getNeighbor(unordered_set<string>& visted, unordered_set<string>& st1, unordered_set<string>& st2, unordered_set<string>& st3, string& word) {
+        for (int i = 0; i < word.size(); ++i) {
+            char temp = word[i];
+            for (char ch = 'a'; ch <= 'z'; ++ch) {
+                word[i] = ch;
+                if (ch != temp && visted.count(word)) {
+                    if (st2.count(word)) {
+                        return true;
+                    }
+                    st3.insert(word);
+                }
+            }
+            word[i] = temp;
+        }
+        return false;
+    }
+
+public:
+    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> visted;
+        for (auto& word : wordList) {
+            visted.insert(word);
+        }
+        if (!visted.count(endWord)) {
+            return 0;
+        }
+
+        unordered_set<string> st1;
+        unordered_set<string> st2;
+        st1.insert(beginWord);
+        st2.insert(endWord);
+        int len = 2;
+
+        while (!st1.empty() && !st2.empty()) {
+            if (st1.size() > st2.size()) {
+                swap(st1, st2);
+            }
+            
+            unordered_set<string> st3;
+            for (auto it = st1.begin(); it != st1.end(); ++it) {
+                string word = *it;
+                visted.erase(word);
+
+                if (getNeighbor(visted, st1, st2, st3, word)) {
+                    return len;
+                }
+            }
+            st1 = st3;
+            len++;
+        }
+
+        return 0;
+    }
+};
+```
+
+### 堆优化Dijkstra算法
+
+```c++
+class Solution {
+public:
+    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
+        int n=wordList.size();
+        int wordLen=beginWord.size();
+        //当前单词到beginword的最短路径
+        unordered_map<string,int> wordPathLen;
+        //初始化距离向量，除了beginWord之外，其他单词距离初始化为INT_MAX/2
+        for(int i=0;i<n;i++){
+            wordPathLen[wordList[i]]=INT_MAX/2;
+        }
+        //PS：这里一定要后初始化beginWord，因为wordList里面可能有beginWord
+        wordPathLen[beginWord]=1;
+        //wordQ记录当前未访问的结点，要求路径最短的结点在顶部，所以用小顶堆存储
+        auto cmp=[&](const string& a, const string& b){
+            return wordPathLen[a]>wordPathLen[b];
+        };
+        priority_queue<string,vector<string>,decltype(cmp)> wordQ(cmp);
+        wordQ.push(beginWord);
+        //wordList中不存在endword，直接返回
+        if(wordPathLen.count(endWord)==0) return 0;        
+        while(!wordQ.empty()){
+            string word=wordQ.top();
+            wordQ.pop();
+            string originWord=word;
+            //寻找与当前单词距离为1的单词
+            for(int i=0;i<wordLen;i++){
+                //记录原始字符
+                char originAlpha=word[i];
+                for(char j='a';j<='z';j++){
+                    if(j==originAlpha) continue;
+                    word[i]=j;
+                    //判断单词是否在wordList中
+                    if(wordPathLen.count(word)==0) continue;
+                    //判断是否为endWord
+                    if(word==endWord) {
+                        return wordPathLen[originWord]+1;
+                    }
+                    //更新最短距离
+                    if(wordPathLen[originWord]+1 < wordPathLen[word]){
+                        if(wordPathLen[word] == INT_MAX/2) {
+                            wordQ.push(word);
+                        }
+                        wordPathLen[word]=wordPathLen[originWord] + 1;
+                    }
+                }
+                //一定要进行初始化，因为要让word回到原始状态，才能修改其他位的字母
+                word=originWord;
+            }
+        }
+        return 0;
+    }
+};
+```
+
+## [剑指 Offer II 109. 开密码锁](https://leetcode.cn/problems/zlDJc7/)
+
+### 单向BFS
+
+```c++
+class Solution {
+public:
+    unordered_set<string> visit;
+    void getNeighbor(string& word, queue<string>& q, string& target){
+        for(int i = 0; i < word.size(); i++){
+            char temp = word[i];
+            string v(2,' ');
+            v[0] = temp == '9' ? '0' : temp + 1;
+            v[1] = temp == '0' ? '9' : temp - 1;
+            for(int j = 0; j < 2; j++){
+                word[i] = v[j];
+                if(visit.count(word)) continue;
+                visit.insert(word);
+                q.push(word);
+            }
+            word[i] = temp;
+        }
+    }
+    int openLock(vector<string>& deadends, string target) {
+        for(auto s : deadends) visit.insert(s);
+        if(visit.count("0000")) return -1;
+        queue<string> q;
+        q.push("0000");
+        visit.insert("0000");
+        int res = 0;
+        while(!q.empty()){
+            int size = q.size();
+            for(int i = 0; i < size; i++){
+                string cur = q.front();
+                q.pop();
+                if(cur == target) return res;
+                getNeighbor(cur, q, target);
+            }
+            res++;
+        }
+        return -1;
+    }
+};
+```
+
+### 双向BFS
+
+```c++
+class Solution {
+private:
+    bool helper(string& word, unordered_set<string>& visted, unordered_set<string>& st2, unordered_set<string>& st3) {
+        for (int i = 0; i < word.size(); ++i) {
+            char temp = word[i];
+            string var(2,' ');
+            var[0] = (temp + 1 > '9') ? '0': temp + 1;
+            var[1] = (temp - 1 < '0') ? '9': temp - 1;
+            for (auto& ch : var) {
+                word[i] = ch;
+                if (!visted.count(word)) {
+                    if (st2.count(word)) {
+                        return true;
+                    }
+                    st3.insert(word);
+                }
+            }
+            word[i] = temp;
+        }
+        return false;
+    }
+
+public:
+    int openLock(vector<string>& deadends, string target) {
+        string init = "0000";
+        if (target == init) {
+            return 0;
+        }
+        
+        unordered_set<string> visted;
+        for (auto& str : deadends) {
+            visted.insert(str);
+        }
+        if (visted.count(init)) {
+            return -1;
+        }
+
+        unordered_set<string> st1;
+        unordered_set<string> st2;
+        st1.insert(init);
+        st2.insert(target);
+        int step = 0;
+
+        while (!st1.empty() && !st2.empty()) {
+            if (st1.size() > st2.size()) {
+                swap(st1, st2);
+            }
+
+            unordered_set<string> st3;
+            step++;
+            for (string word : st1) {
+                visted.insert(word);
+                if (helper(word, visted, st2, st3)) {
+                    return step;
+                }
+            }
+            st1 = st3;
+        }
+
+        return -1;
+    }
+};
+```
+
+## [剑指 Offer II 110. 所有路径](https://leetcode.cn/problems/bP4bmD/)
+
+**DFS+回溯**
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    void dfs(vector<vector<int>>& graph, int i){
+        if(i == graph.size() - 1){
+            res.push_back(path);
+            return;
+        }
+        for(int k = 0; k < graph[i].size(); k++){
+            path.push_back(graph[i][k]);
+            dfs(graph,graph[i][k]);
+            path.pop_back();
+        }
+    }
+    vector<vector<int>> allPathsSourceTarget(vector<vector<int>>& graph) {
+        path.push_back(0);
+        dfs(graph,0);
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 111. 计算除法](https://leetcode.cn/problems/vlzXQL/)
+
+**建图：**
+
+- 利用哈希表存储边与权重，由题意可知，该题为有向图，边的权重与两节点之商
+
+  ```c++
+  //map<起点，vector<pair<终点，权重>>>
+  unordered_map<string,vector<pair<string,double>>> graph;
+  ```
+
+- DFS寻找路径
+
+```c++
+class Solution {
+public:
+    double dfs( unordered_map<string,vector<pair<string,double>>>& graph, string begin, string end,unordered_set<string>& visted, double val){
+        if(!graph.count(begin) || !graph.count(end)) return (double)-1;
+        visted.insert(begin);
+        if(begin == end) return val;
+        for(auto s : graph[begin]){
+            if(!visted.count(s.first)){
+                double ret = dfs(graph,s.first,end,visted,s.second * val);
+                if(ret > 0) return ret;
+            }
+        }
+        return -1;
+    }
+
+    vector<double> calcEquation(vector<vector<string>>& equations, vector<double>& values, vector<vector<string>>& queries) {
+        //map<起点，vector<pair<终点，权重>>>
+        unordered_map<string,vector<pair<string,double>>> graph;
+        //建图
+        for(int i = 0; i < equations.size(); i++){
+            graph[equations[i][0]].push_back({equations[i][1], values[i]}) ;
+            graph[equations[i][1]].push_back({equations[i][0], 1 / values[i]});
+        }
+
+        vector<double> res(queries.size(),-1.0);
+        for(int i = 0; i < queries.size(); i++){
+            unordered_set<string> visted;
+            string begin = queries[i][0];
+            string end = queries[i][1];
+            res[i] = dfs(graph, begin,end, visted, 1);
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 112. 最长递增路径](https://leetcode.cn/problems/fpTFWP/)
+
+**DFS加记忆化搜索**
+
+若使用普通的DFS，则存在大量重复计算，下面阐述普通DFS的算法流程
+
+- 定义`path[i][j]`表示以点`(i,j)`为起点的最长递增路径
+
+- 对于当前点`(i,j)`，遍历其上下左右4个方向上的点，若某方向上的数值比`(i,j)`大，则点`(i,j)`的递增路径长度**加一**
+  - **记忆化搜索即是对这一步骤进行优化**
+
+记忆化搜索流程：
+
+- 对于普通DFS的第二步，在以不同点为起点时，存在大量重复过程。若在遍历过程中实时记录以每个点为起点时的最长递增路径，则下次遍历到该点时，可以直接利用该值
+
+**代码：**
+
+```c++
+class Solution {
+public:
+    int dfs(vector<vector<int>>& matrix, int i, int j, int m, int n, vector<vector<int>>& path){
+        int ret = 0;
+        int dx[] = {0,1,0,-1};
+        int dy[] = {1,0,-1,0};
+        for(int k = 0; k < 4; k++){
+            int a = i + dx[k];
+            int b = j + dy[k];
+            if(a >= 0 && a < m && b >= 0 && b < n && matrix[a][b] > matrix[i][j]){
+                //ret == 以点(a,b)为起点的最长递增路径长度
+                if(path[a][b])
+                    ret = max(ret, path[a][b]);
+                else
+                    ret = max(ret, dfs(matrix, a, b, m, n, path));
+            }
+        }
+        //记录以点(i,j)为起点的最长递增路径长度,path[i][j] = max(path[a][b]) + 1,(a,b)为其上下左右4个方向上的点的最长递增路径
+        path[i][j] = ret + 1;
+        return path[i][j];
+    }
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        int m = matrix.size(), n = matrix[0].size();
+        vector<vector<int>> path(m, vector<int>(n,0));
+        int res = 0;
+        for(int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                if(path[i][j]) 
+                    res = max(res, path[i][j]);
+                else
+                    res = max(res, dfs(matrix, i, j, m, n, path));
+            }
+        }
+        return res;
+    }
+};
+```
+
+## [剑指 Offer II 113. 课程顺序](https://leetcode.cn/problems/QA2IGt/)
+
+**拓扑排序**
+
+`(a,b)`表示课程a必须在课程b之后学习，即拓扑排序后，a必须出现在b的后面,即排序结果为 b a
+
+**使用邻接矩阵建图**
+
+- `graph[i][j]`表示 i 到 j 存在一条边
+
+**拓扑排序流程：**
+
+- 首先将所有入度为0的点加入队列，然后从队头元素开始遍历其临边
+- 将临边节点入度减一，若减一后入度为0，则将其加入队列
+- 每次将对头元素加入结果集
+- 若最后结果集元素数量等于课程数量，说明找到了一条拓扑排序路径，否则不存在拓扑排序
+
+**代码：**
+
+```c++
+class Solution {
+public:
+    vector<int> findOrder(int numCourses, vector<vector<int>>& prerequisites) {
+        vector<int> res;
+        //建图,有向图，a->b表示排序结果中 b必定出现在a后面，即拓扑排序后为 a, b
+        vector<vector<int>> graph(numCourses,vector<int>(numCourses,0));
+        //统计各节点入度
+        vector<int> inNum(numCourses,0);
+        for(auto p : prerequisites){
+            inNum[p[0]]++;
+            graph[p[1]][p[0]] = 1;
+        }
+
+        queue<int> q;
+        //所有入度为0的点入队
+        for(int i = 0; i < numCourses; i++){
+            if(inNum[i] == 0)  q.push(i);
+        }
+
+        while(!q.empty()){
+            int cur = q.front();
+            res.push_back(cur);
+            q.pop();
+            for(int i = 0; i < numCourses; i++){
+                if(graph[cur][i] == 0) continue;
+                inNum[i]--;
+                if(inNum[i] == 0){
+                    q.push(i);
+                }
+            }
+        }
+
+        if(res.size() == numCourses)
+            return res;
+        return vector<int>{};
+
+    }
+};
+```
+
+**优化**
+
+- 是邻接表建图，可以节省大量空间，邻接表用哈希表实现
+
+```c++
+class Solution {
+public:
+    vector<int> findOrder(int numCourses, vector<vector<int>>& prerequisites) {
+        vector<int> res;
+        //建图,有向图，a->b表示排序结果中 b必定出现在a后面，即拓扑排序后为 a, b
+       unordered_map<int, vector<int>> graph;
+        //统计各节点入度
+        vector<int> inNum(numCourses,0);
+        for(auto p : prerequisites){
+            inNum[p[0]]++;
+            graph[p[1]].push_back(p[0]);
+        }
+
+        queue<int> q;
+        //所有入度为0的点入队
+        for(int i = 0; i < numCourses; i++){
+            if(inNum[i] == 0)  q.push(i);
+        }
+
+        while(!q.empty()){
+            int cur = q.front();
+            res.push_back(cur);
+            q.pop();
+            for(auto& n : graph[cur]){
+                inNum[n]--;
+                if(inNum[n] == 0){
+                    q.push(n);
+                }
+            }
+        }
+
+        if(res.size() == numCourses)
+            return res;
+        return{};
+
+    }
+};
+```
+
+## [剑指 Offer II 114. 外星文字典](https://leetcode.cn/problems/Jf1JuT/)
+
+对字符串 s1 和字符串 s2 进行排序时，从两者的首字母开始逐位对比，先出现较小的字母的单词排序在前，若直到其中一个单词所有字母都对比完都无法得出结果，则长度较小的单词排序在前。以题目中 words = ["ac","ab","bc","zc","zb"] 为例，一共出现了 'a'、'b'、'c' 和 'z' 4 个字母。由于 "ac" < "ab" 所以 'c' < 'b'，由于 "ab" < "bc" 所以 'a' < 'b'，依次可得 'b' < 'z' 、'c' < 'b'。
+
+这里需要注意一类特殊输入，若两者的前缀相同，但前者的单词长度长于后者，如 "abc" 和 "ab"。这是不符合排序规则的，无论最后字母存在怎么样的拓扑排序都不会成立，所以这是一个无效输入，直接输出拓扑排序为空。
+
+```c++
+class Solution {
+public:
+    string alienOrder(vector<string>& words) {
+        unordered_map<char, unordered_set<char>> graph;
+        unordered_map<char, int> inDegress;
+
+        // 建图
+        for (auto& word : words) {
+            for (auto& ch : word) {
+                if (!graph.count(ch)) {
+                    graph[ch] = {};
+                } 
+                if (!inDegress.count(ch)) {
+                    inDegress[ch] = 0;
+                }
+            }
+        }
+
+        // 计算邻接表和入度
+        for (int i = 1; i < words.size(); ++i) {
+            int j = 0;
+            int len = min(words[i - 1].size(), words[i].size());
+            for (; j < len; ++j) {
+                char ch1 = words[i - 1][j];
+                char ch2 = words[i][j];
+                //若ch1 != ch2 说明字典序中ch1 < ch2，建立一条边：ch1->ch2
+                if (ch1 != ch2) {
+                    if (!graph[ch1].count(ch2)) {
+                        graph[ch1].insert(ch2);
+                        inDegress[ch2]++;
+                    }
+                    break;
+                }
+            }
+            // 特殊判断
+            if (j == len && words[i - 1].size() > words[i].size()) {
+                return {};
+            }
+        }
+
+        string ret{""};
+        queue<char> que;
+        // 入度为 0 的点
+        for (auto& d : inDegress) {
+            if (d.second == 0) {
+                que.push(d.first);
+            }
+        }
+        // BFS
+        while (!que.empty()) {
+            char ch = que.front();
+            que.pop();
+            ret.push_back(ch);
+
+            for (auto& c : graph[ch]) {
+                inDegress[c]--;
+                if (inDegress[c] == 0) {
+                    que.push(c);
+                }
+            }
+        }
+        
+        if (ret.size() != inDegress.size()) {
+            return "";
+        }
+        return ret;
+    }
+};
+```
+
+## [剑指 Offer II 115. 重建序列](https://leetcode.cn/problems/ur2n8P/)
+
+**妈的这题贼烦，细节很多**
+
+**首先，这题是典型的拓扑排序题，首先明确题意：**
+
+- 该题是求：给定序列`org`是否是**唯一**的拓扑排序，而不是单纯的求是否存在拓扑排序
+
+**注意细节：**
+
+- 元素是`1~n`，因此入度数组大小应该为`org.size() + 1`,从元素1开始计算入度
+- 对于给定的序列集`seqs`中的每个集合，要判断其合法性，若集合中的元素小于1或者大于`org.size()`，则说明该元素不合法，直接返回false
+- 若要拓扑排序唯一，则每个节点的入度都应该为一，即BFS每一层循环，队列中都只有一个元素
+- 最后判断构建出的拓扑排序序列是否与给定序列相同
+
+**代码：**
+
+```c++
+class Solution {
+public:
+    bool sequenceReconstruction(vector<int>& org, vector<vector<int>>& seqs) {
+        if(seqs.empty()) return false;
+        unordered_map<int,vector<int>> graph;
+        vector<int> inDegree(org.size() + 1,0);
+        vector<int> ret;
+        //建图
+        for(auto v : seqs){
+            //判断合法性
+            if(v.size() == 1 && (v[0] > org.size() || v[0] < 1)){
+                return false;
+            }
+            for(int i = 1; i < v.size(); i++){
+                //判断合法性
+                if(v[i] > org.size() || v[i] < 1) return false;
+                graph[v[i-1]].push_back(v[i]);
+                inDegree[v[i]]++;
+            }
+        }
+
+        queue<int> q;
+        for(int i = 1; i < inDegree.size(); i++){
+            if(inDegree[i] == 0)
+                q.push(i);
+        }
+
+        while(!q.empty()){
+            int size = q.size();
+            //若要拓扑排序唯一，则每个节点的入度都应该为一，即BFS每一层循环，队列中都只有一个元素
+            if(size != 1) return false;
+            int cur = q.front();
+            q.pop();
+            ret.push_back(cur);
+            for(auto g : graph[cur]){
+                inDegree[g]--;
+                if(inDegree[g] == 0)
+                    q.push(g);
+            }
+        }
+		//若构建出的拓扑排序序列与给定的相同，返回true
+        return ret == org;
+    }
+};
+```
+
+# 并查集
+
+## [剑指 Offer II 116. 省份数量](https://leetcode.cn/problems/bLyHh0/)
+
+### BFS
+
+计算图中子图的数量，使用BFS，遍历每个节点以及其子节点，并标记为已访问，每进行一次BFS就找到了一个子图，统计BFS的次数即为答案
+
+```c++
+class Solution {
+public:
+    void Bfs(int i, vector<vector<int>>& isConnected, vector<bool>& visit){
+        queue<int> q;
+        q.push(i);
+        visit[i] = true;
+        while(!q.empty()){
+            int cur = q.front();
+            q.pop();
+            for(int j = 0; j < isConnected.size(); j++){
+                if(isConnected[cur][j] && !visit[j]){
+                    visit[j] = true;
+                    q.push(j);
+                }
+            }
+        }
+    }
+    int findCircleNum(vector<vector<int>>& isConnected) {
+        int n = isConnected.size();
+        vector<bool> visit(n,false);
+        int res = 0;
+        for(int i = 0; i < isConnected.size(); i++){
+            if(!visit[i]){
+                Bfs(i,isConnected,visit);
+                res++;
+            }
+        }
+        return res;
+    }
+};
+```
+
+### **并查集**
+
+```c++
+class Solution {
+public:
+    //1 <= n <= 200，因此只需要开辟200
+    int p[200];
+    //返回x的父节点
+    int find(int x){
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+    int findCircleNum(vector<vector<int>>& isConnected) {
+        //初始化所有节点的父节点为自己
+        for(int i = 0; i < 200; i++)
+            p[i] = i;
+
+        for(int i = 0; i < isConnected.size(); i++){
+            for(int j = 0; j < isConnected.size(); j++){
+                //若两节点联通且不在同一集合，则合并集合
+                if(i != j && isConnected[i][j]){
+                    int p1 = find(i);
+                    int p2 = find(j);
+                    //若两者不属于同一个集合
+                    if(p1 != p2){
+                        p[p1] = p2;
+                    }
+                }
+            }
+        }
+        //并查集中父节点的个数就是省份数量
+        int count = 0;
+        for(int i = 0; i < isConnected.size(); i++){
+            if(p[i] == i) count++;
+        }
+        return count;
+    }
+};
+```
+
+
+
+## [剑指 Offer II 117. 相似的字符串](https://leetcode.cn/problems/H6lPxb/)
+
+### BFS
+
+```c++
+class Solution {
+public:
+    //因为给定字符串全互为字母异位词，因此只需要判断是否只有两个位置不同或全相同即可判断两者是否相似
+    bool isSimilar(string s1, string s2){
+        int cnt = 0;
+        for(int i = 0; i < s1.length(); ++i){
+            if(s1[i] != s2[i]) cnt++;
+        }
+        return cnt <= 2;
+    }
+
+    void bfs(vector<string>& strs,  vector<bool>& vis, int i, unordered_map<string,unordered_set<string>>& mp){
+        queue<int> q;
+        q.push(i);
+        vis[i] = true;
+        while(!q.empty()){
+            int cur = q.front();
+            q.pop();
+            for(int j = 0; j < strs.size(); j++){
+                if(!vis[j] && mp[strs[cur]].count(strs[j])){
+                    q.push(j);
+                    vis[j] = true;
+                }
+            }
+        }
+    }
+
+    int numSimilarGroups(vector<string>& strs) {
+        int n = strs.size();
+        int cnt = 0;
+        vector<bool> vis(n,false);
+        //建图
+        unordered_map<string,unordered_set<string>> mp;
+        for(int i = 0; i < n; ++i){
+            for(int j = 0; j < n; ++j){
+                if(isSimilar(strs[i], strs[j])){
+                    mp[strs[i]].insert(strs[j]);
+                }
+            }
+        }
+        for(int i = 0; i < n; ++i){
+            if(!vis[i]){
+                bfs(strs, vis, i, mp);
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+};
+```
+
+### 并查集
+
+```c++
+class Solution {
+public:
+    vector<int> f;
+
+    int find(int x) {
+        return f[x] == x ? x : f[x] = find(f[x]);
+    }
+
+    bool check(const string &a, const string &b, int len) {
+        int num = 0;
+        for (int i = 0; i < len; i++) {
+            if (a[i] != b[i]) {
+                num++;
+                if (num > 2) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    int numSimilarGroups(vector<string> &strs) {
+        int n = strs.size();
+        int m = strs[0].length();
+        f.resize(n);
+        for (int i = 0; i < n; i++) {
+            f[i] = i;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                int fi = find(i), fj = find(j);
+                if (fi == fj) {
+                    continue;
+                }
+                if (check(strs[i], strs[j], m)) {
+                    f[fi] = fj;
+                }
+            }
+        }
+        int ret = 0;
+        for (int i = 0; i < n; i++) {
+            if (f[i] == i) {
+                ret++;
+            }
+        }
+        return ret;
+    }
+};
+
+```
+
+## [剑指 Offer II 118. 多余的边](https://leetcode.cn/problems/7LpjUW/)
+
+可以通过并查集寻找多余的边。初始时，每个节点都属于不同的连通分量。遍历每一条边，判断这条边连接的两个顶点是否属于相同的连通分量。
+
+- 如果两个顶点属于不同的连通分量，则说明在遍历到当前的边之前，这两个顶点之间不连通，因此当前的边不会导致环出现，合并这两个顶点的连通分量。
+
+
+- 如果两个顶点属于相同的连通分量，则说明在遍历到当前的边之前，这两个顶点之间已经连通，因此当前的边导致环出现，为多余的边，将当前的边作为答案返回。
+
+
+```c++
+class Solution {
+public:
+    int p[1001];
+
+    int find(int x) {
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        for (int i = 1; i < edges.size(); ++i) {
+            p[i] = i;
+        }
+
+        int ret = -1;
+        for (int i = 0; i < edges.size(); ++i) {
+            int p1 = find(edges[i][0]);
+            int p2 = find(edges[i][1]);
+            if (p1 != p2) {
+                p[p2] = p1;
+            }
+            else {
+                ret = i;
+            }
+        }
+        
+        if (ret == -1) {
+            return {};
+        }
+        return edges[ret];
+    }
+};
+
+```
+
+## [剑指 Offer II 119. 最长连续序列](https://leetcode.cn/problems/WhsWhI/)
+
+### BFS 
+
+如果把每个整数看作图的节点，相差为 1 的两个整数之间存在一条边，那么这些整数就会形成若干个子图，每个子图内都对于一个连续数值序列，那么本问题就转化为求最大的子图大小。可以使用图的广度优先搜索和深度优先搜索两种算法计算每个子图，这里采用广度优先算法。完整代码如下，若整数的个数为 n，那么节点数为 n，边的个数为 O(n)，所以算法的时间复杂度为 O(n)。
+
+```c++
+class Solution {
+private:
+    int bfs(unordered_set<int>& visted, int node) {
+        queue<int> que;
+        que.push(node);
+
+        int len = 0;
+        while (!que.empty()) {
+            int cur = que.front();
+            que.pop();
+            visted.erase(cur);
+            len++;
+            if (visted.count(cur + 1)) {
+                que.push(cur + 1);
+            }
+            if (visted.count(cur - 1)) {
+                que.push(cur - 1);
+            }
+        }
+        return len;
+    }
+
+public:
+    int longestConsecutive(vector<int>& nums) {
+        unordered_set<int> visted;
+        for (auto& n : nums) {
+            if (!visted.count(n)) {
+                visted.insert(n);
+            }
+        }
+
+        int ret = 0;
+        for (auto& n : nums) {
+            if (visted.count(n)) {
+                ret = max(ret, bfs(visted, n));
+            }
+        }
+
+        return ret;
+    }
+};
+```
+
+### 并查集
+
+**数组中可能存在重复元素，我写的这版代码过不去**
+
+```c++
+class Solution {
+public:
+    int p[10001];
+    //连通块大小，
+    int size[10001];
+    int find(int x){
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+
+    int longestConsecutive(vector<int>& nums) {
+        for(int i = 0; i < nums.size(); i++){
+            p[i] = i;
+            size[i] = 1;
+        }
+
+        for(int i = 0; i < nums.size(); i++){
+            for(int j = 0; j < nums.size(); j++){
+                int p1 = find(i);
+                int p2 = find(j);
+                if(p1 != p2 && abs(nums[i] - nums[j]) == 1){
+                    p[p1] = p2;
+                    size[p2] += size[p1];
+                }
+            }
+        }
+
+        int res = 0;
+        for(int i = 0; i < nums.size(); i++){
+            res = max(res, size[i]);
+        }
+        return res;
+    }
+};
+```
+
+**因此需要使用哈希表来模拟并查集**
+
+```c++
+class Solution {
+private:
+    unordered_map<int, int> p;
+    unordered_map<int, int> counts;
+    
+    int find(int x){
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+
+    int merge(int node1, int node2) {
+        int p1 = find(node1);
+        if (p.count(node2)) {
+            int p2 = find(node2);
+            if (p1 != p2) {
+                p[p2] = p1;
+                counts[p1] += counts[p2];
+            }
+        }
+        return counts[p1];
+    }
+
+public:
+    int longestConsecutive(vector<int>& nums) {
+        for (auto& n : nums) {
+        	p[n] = n;
+        	counts[n] = 1;
+        }
+
+        int ret = 0;
+        for (auto& n : nums) {
+            ret = max(ret, merge(n, n - 1));
+            ret = max(ret, merge(n, n + 1));
+        }
+
+        return ret;
+    }
+};
+```
+
+
+
+### 哈希表
+
+首先所有元素存入hashset；
+然后遍历哈希表，若发现比当前元素小1的元素存在于哈希表中，说明此元素不是开头，则跳过。
+找到开头元素，一直递增（每次+1）到hashset中不包含为止。 此为连续序列。
+遍历过程中记录参数即可。
+
+```c++
+class Solution {
+public:
+    int longestConsecutive(vector<int>& nums) {
+        unordered_set<int> hash;
+        int res = 0;
+        for(const auto num : nums){
+            hash.insert(num);
+        }
+        for(const auto num : hash){
+            int len = 1;
+            if(hash.count(num - 1)){
+                continue;
+            }
+            int cur = num;
+            while(hash.count(cur + 1)){
+                cur++;
+                len++;
+            }
+            res = max(res,len);
+        }
+        return res;
     }
 };
 ```

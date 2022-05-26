@@ -4393,6 +4393,58 @@ public:
 };
 ```
 
+### 二刷：
+
+```c++
+class Solution {
+public:
+    int n;
+    vector<string> res;
+    bool isValid(const string& s, int start, int end)
+    {
+        if(start > end) return false;
+        if(s[start] == '0' && start != end) return false;
+        int num = 0;
+        for(int i = start; i <= end; i++)
+        {
+            if(s[i] > '9' || s[i] <'0') return false;
+            num = num * 10 + s[i] - '0';
+            if(num > 255) return false;
+        }
+        return true;
+    }
+    // u代表当前搜到字符串的第几个位置
+    // cnt为已经将字符串分割成了满足要求的几部分
+    void dfs(string& s, int u, int cnt, string path)
+    {
+        if (u == n && cnt == 4)
+        {
+            path.pop_back();
+            res.push_back(path);
+            return;
+        }
+        if (u == n || cnt > 4)
+            return;    // 剪枝
+        for (int i = u; i < n; i ++ )
+        {
+            if(isValid(s,u,i)){
+                string str = s.substr(u, i - u + 1);
+                dfs(s, i + 1, cnt + 1, path + str + '.');
+            }
+            
+        }
+    }
+    vector<string> restoreIpAddresses(string s) {
+        n = s.size();
+        dfs(s, 0, 0, "");
+        return res;
+    }
+
+};
+```
+
+
+
 # 动态规划
 
 ## [剑指 Offer II 088. 爬楼梯的最少成本](https://leetcode-cn.com/problems/GzCJIP/)
@@ -4798,6 +4850,29 @@ public:
             }
         }
         return dp[ns][nt];
+    }
+};
+```
+
+**一维DP**
+
+```c++
+class Solution {
+public:
+    int numDistinct(string s, string t) {
+        int ns = s.size();
+        int nt = t.size();
+        if(ns < nt) return 0;
+        vector<uint64_t> dp(nt+1,0);
+        dp[0] = 1;
+        for(int i = 1; i <= ns; i++){
+            for(int j = nt; j >= 1; j--){
+                if(s[i-1] == t[j-1]){
+                    dp[j] += dp[j-1];
+                }
+            }
+        }
+        return dp[nt];
     }
 };
 ```
@@ -5475,9 +5550,11 @@ private:
             for (char ch = 'a'; ch <= 'z'; ++ch) {
                 word[i] = ch;
                 if (ch != temp && visted.count(word)) {
+                    //如果当前的邻点在st2中已经存在，说明已经存在一条begin到end的边
                     if (st2.count(word)) {
                         return true;
                     }
+                    //st3c
                     st3.insert(word);
                 }
             }
@@ -5506,7 +5583,7 @@ public:
             if (st1.size() > st2.size()) {
                 swap(st1, st2);
             }
-            
+            //st3存储当前点的相邻点
             unordered_set<string> st3;
             for (auto it = st1.begin(); it != st1.end(); ++it) {
                 string word = *it;

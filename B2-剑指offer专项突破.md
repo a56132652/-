@@ -3583,28 +3583,55 @@ public:
 
 ## [剑指 Offer II 068. 查找插入位置](https://leetcode-cn.com/problems/N6YdxV/)
 
+### 左闭右闭区间写法(l <= r)
+
 ```c++
 class Solution {
 public:
     int searchInsert(vector<int>& nums, int target) {
-        int i = 0, j = nums.size() - 1;
-        while(i <= j){
-            int mid = i + j >> 1;
-            if(nums[mid] > target) j = mid - 1;
-            else if(nums[mid] < target) i = mid + 1;
+        int n = nums.size();
+        int l = 0, r = n - 1;
+        while(l <= r){
+            int mid = l + r >> 1;
+            if(nums[mid] < target) l = mid + 1;
+            else if(nums[mid] == target) return mid;
             else
-                return mid;
+                //右区间更新方式不同
+                r = mid - 1;
         }
-        return i;
+        return l;
     }
 };
 ```
 
+### 左闭右开区间写法(l < r)
+
+```c++
+class Solution {
+public:
+    int searchInsert(vector<int>& nums, int target) {
+        int n = nums.size();
+        int l = 0, r = n;
+        while(l < r){
+            int mid = l + r >> 1;
+            if(nums[mid] < target) l = mid + 1;
+            else if(nums[mid] == target) return mid;
+            else
+               	//右区间更新方式不同
+                r = mid;
+        }
+        return l;
+    }
+};
+```
+
+
+
 ## [剑指 Offer II 069. 山峰数组的顶部](https://leetcode-cn.com/problems/B1IidL/)
 
-- 峰顶元素左侧满足 arr[i-1] < arr[i]arr[i−1]<arr[i] 性质，右侧不满足
+- 峰顶元素左侧满足 arr[i-1] < arr[i]性质，右侧不满足
 
-- 峰顶元素右侧满足 arr[i] > arr[i+1]arr[i]>arr[i+1] 性质，左侧不满足
+- 峰顶元素右侧满足 arr[i] > arr[i+1]性质，左侧不满足
 
 **第一种写法**
 
@@ -3687,22 +3714,40 @@ public:
 
 
 ```c++
+//写法一：
 class Solution {
 public:
     int singleNonDuplicate(vector<int>& nums) {
-        int low = 0, high = nums.size() - 1;
-        while (low < high) {
-            int mid = (high - low) / 2 + low;
-            if (nums[mid] == nums[mid ^ 1]) {
-                low = mid + 1;
-            } else {
-                high = mid;
-            }
+        int n = nums.size();
+        if(n == 1) return nums[0];
+        int l = 0, r = n - 1;
+        while(l <= r){
+            int mid = (l + r) >> 1;
+            if(nums[mid] == nums[mid ^ 1])
+                l = mid + 1;
+            else
+                r = mid - 1;
         }
-        return nums[low];
+        return nums[l];
     }
 };
-
+//写法二
+class Solution {
+public:
+    int singleNonDuplicate(vector<int>& nums) {
+        int n = nums.size();
+        if(n == 1) return nums[0];
+        int l = 0, r = n;
+        while(l < r){
+            int mid = (l + r) >> 1;
+            if(nums[mid] == nums[mid ^ 1])
+                l = mid + 1;
+            else
+                r = mid;
+        }
+        return nums[l];
+    }
+};
 ```
 
 ## [剑指 Offer II 071. 按权重生成随机数](https://leetcode-cn.com/problems/cuyjEf/)
@@ -3736,24 +3781,55 @@ public:
     
     int pickIndex() {
         int rnd = rand() % total;           //生成最大值范围内的随机数
-        int left = 0, right = sums.size() - 1;
+        int left = 0, right = sums.size();
 
         while (left < right)                //二分法在前缀和数组中找到第一个大于随机数的元素下标
         {
             int mid = left + (right - left) / 2;
             if (rnd < sums[mid])            
-            {
                 right = mid;
-            }
             else
-            {
                 left = mid + 1;
-            }
         }
-
         return left;
     }
 };
+/*
+	另一种二分写法
+    int pickIndex() {
+        int rnd = rand() % total;           //生成最大值范围内的随机数
+        int left = 0, right = sums.size() - 1;
+
+        while (left <= right)                //二分法在前缀和数组中找到第一个大于随机数的元素下标
+        {
+            int mid = left + (right - left) / 2;
+            if (rnd < sums[mid])            
+                right = mid - 1;
+            else
+                left = mid + 1;
+        }
+        return left;
+    }	
+*/
+
+//库函数版本
+class Solution {
+private:
+    mt19937 gen;
+    uniform_int_distribution<int> dis;
+    vector<int> pre;
+
+public:
+    Solution(vector<int>& w): gen(random_device{}()), dis(1, accumulate(w.begin(), w.end(), 0)) {
+        partial_sum(w.begin(), w.end(), back_inserter(pre));
+    }
+    
+    int pickIndex() {
+        int x = dis(gen);
+        return lower_bound(pre.begin(), pre.end(), x) - pre.begin();
+    }
+};
+
 ```
 
 ## [剑指 Offer II 072. 求平方根](https://leetcode-cn.com/problems/jJ0w9p/)
@@ -3762,6 +3838,7 @@ public:
 class Solution {
 public:
     int mySqrt(int x) {
+        if(x <= 1) return x;
         int l = 0, r = x, ans = -1;
         while (l <= r) {
             int mid = l + (r - l) / 2;
@@ -3770,6 +3847,24 @@ public:
                 l = mid + 1;
             } else {
                 r = mid - 1;
+            }
+        }
+        return ans;
+    }
+};
+//另一种二分法
+class Solution {
+public:
+    int mySqrt(int x) {
+        if(x <= 1) return x;
+        int l = 0, r = x, ans = -1;
+        while (l < r) {
+            int mid = l + (r - l) / 2;
+            if ((long long)mid * mid <= x) {
+                ans = mid;
+                l = mid + 1;
+            } else {
+                r = mid;
             }
         }
         return ans;
@@ -3972,7 +4067,6 @@ public:
         for(int i = n/2; i > 0; i--)
             down(i,n);
 
-        int res = 0;
         while(--k){
             h[1] = h[n--];
             down(1,n);

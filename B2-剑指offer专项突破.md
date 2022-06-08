@@ -40,6 +40,46 @@ public:
 };
 ```
 
+**不使用 Long 类型解法**
+
+```c++
+class Solution {
+public:
+    int divide(int a, int b) {
+        if (a == INT_MIN && b == -1) {
+            return INT_MAX;
+        }
+        int negative = 2;
+        if (a > 0) {
+            negative--;
+            a = -a;
+        }
+        if (b > 0) {
+            negative--;
+            b = -b;
+        }
+        unsigned int ret = divideCore(a, b);
+        return negative == 1 ? -ret : ret;
+    }
+
+    unsigned int divideCore(int a, int b) {
+        int ret = 0;
+        // 注意a, b都是负数，所以a <= b就是还可以继续除
+        while (a <= b) {
+            int value = b;
+            unsigned int quo = 1;
+            while (value >= 0xc0000000 && a <= value + value) {
+                quo *= 2;
+                value *= 2;
+            }
+            ret += quo;
+            a -= value;
+        }
+        return ret;
+    }
+};
+```
+
 
 
 ## [剑指 Offer II 002. 二进制加法](https://leetcode-cn.com/problems/JFETK5/)
@@ -357,7 +397,6 @@ public:
         int res = INT_MAX;
         int sum = 0;
         while(j < nums.size()){
-            
             sum += nums[j];
             while(i < nums.size() && sum >= target){
                 res = min(j - i + 1, res);
@@ -383,6 +422,7 @@ public:
 - 因为`nums`中元素均大于0，因此前缀数组是一个递增的数组
 
   - 对于`sum[i]`，利用二分法查找最近的`sum[l]`,使得`sum[l] - sum[i] >= target`
+  - 则此时子数组长度为`l - i + 1`
 
 **代码：**
 
@@ -397,6 +437,10 @@ public:
             sum[i] = sum[i-1] + nums[i-1];
         }
         for(int i = 1; i <= n; i++){
+            /*
+            	sum[l] - sum[i-1] >= target
+				即nums[i]~nums[l]的元素和 >= target
+            */
             int t = sum[i-1] + target;
             int l = 1, r = n;
             while(l <= r){
@@ -476,8 +520,8 @@ public:
 碰到该题，第一想法就是滑动窗口，但是怎么利用滑动窗口是很有讲究的
 
 - 一开始我的想法是窗口内存储字符，只要这些字符都属于另一字符串且长度相同， 那就符合条件
-  - 但是实现的时候卡在了判断字符是否属于零一字符串上
-- **题解中，窗口用于维护字符数量，因为根据题意，当满足条件时，窗口内元素个数与零一字符串元素个数是一致的**，妙哉
+  - 但是实现的时候卡在了判断字符是否属于另一字符串上
+- **题解中，窗口用于维护字符数量，因为根据题意，当满足条件时，窗口内元素个数与另一字符串元素个数是一致的**，妙哉
   - 窗口长度固定为`s1.size()`
   - 每次从右边进来一个字符，并且从左边出去一个字符
 
@@ -958,6 +1002,8 @@ private:
 ```c++
 class NumMatrix {
 public:
+    //前缀和数组，sum[i][j]表示以[0,0]为左上角元素，[i-1,j-1]为右下角元素的子数组所有元素之和
+    //sum[0][j]以及sum[i][0]全初始化为0
     vector<vector<int>> sums;
 
     NumMatrix(vector<vector<int>>& matrix) {
@@ -1007,12 +1053,36 @@ public:
 };
 ```
 
+**栈**
+
+```c++
+class Solution {
+public:
+    ListNode* removeNthFromEnd(ListNode* head, int n) {
+        stack<ListNode*> s;
+        ListNode* dummy = new ListNode(-1,head);
+        ListNode* cur = dummy;
+        while(cur){
+            s.push(cur);
+            cur = cur->next;
+        }
+
+        while(n--){
+            s.pop();
+        }
+
+        ListNode* pre = s.top();
+        pre->next = pre->next->next;
+        return dummy->next;
+    }
+};
+```
+
 ## [剑指 Offer II 022. 链表中环的入口节点](https://leetcode-cn.com/problems/c32eOV/)
 
 ```c++
 class Solution {
 public:
-
     ListNode *detectCycle(ListNode *head) {
         if(!head || !head->next) return nullptr;
         ListNode* slow = head;
@@ -1021,8 +1091,10 @@ public:
             fast = fast->next->next;
             slow = slow->next;
             if(fast == slow){
+                //如果两者都为空，则说明不存在环，直接返回
+                if(!fast) return nullptr;
                 ListNode* index1 = head;
-                ListNode* index2 = slow;
+                ListNode* index2 = fast;
                 while(index1 != index2){
                     index1 = index1->next;
                     index2 = index2->next;
@@ -1091,7 +1163,6 @@ public:
         }
     }
 };
-
 ```
 
 ## [剑指 Offer II 025. 链表中的两数相加](https://leetcode-cn.com/problems/lMSNwu/)
@@ -1207,19 +1278,6 @@ public:
 
   - 此时若节点数为偶数，则`slow`指向前半部分链表的最后一个节点，因此从`slow->next`拆分链表
   - 若节点数为奇数，则`slow`指向中间节点，也从`slow->next`拆分链表
-
-- 还有一种中间节点寻找方式
-
-  ```c++
-          while(fast){
-              fast = fast->next;
-              slow = slow->next;
-              if(fast) fast = fast->next;
-          }
-  ```
-
-  - 此时若节点数为偶数，则`slow`指向后半部分链表的第一个节点，因此从`slow`拆分链表
-  - 若节点数为奇数，则`slow`指向中间节点的下一个节点，也从`slow`拆分链表
 
 ```c++
 class Solution {
@@ -1344,11 +1402,11 @@ public:
 
     - 处理逻辑很简单，首先记录当前节点的下一个节点`next`
 
-    - 然后递归处理孩子节点，记录返回值`cur`，即孩子曾处理完成后的**头节点**
+    - 然后递归处理孩子节点，记录返回值`cur`，即孩子层处理完成后的**头节点**
 
     - 还有记录下处理完成后的孩子层链表的尾部节点`tail`
 
-    - 令当前节点的`next`指向孩子层头节点，孩子曾尾部节点`next`指向当前节点的`next`
+    - 令当前节点的`next`指向孩子层头节点，孩子层尾部节点`next`指向当前节点的`next`
 
     - 千万不能忘了前驱指针的处理
 
@@ -1447,6 +1505,48 @@ public:
     }
 };
 ```
+
+**二刷记录**
+
+```c++
+class Solution {
+public:
+    Node* insert(Node* head, int insertVal) {
+        Node* node = new Node(insertVal);
+        if(!head){
+            node->next = node;
+            head = node;
+            return head;
+        }
+        
+        Node* cur = head;
+        while(cur->next != head){
+            if(cur->val > cur->next->val){
+                if(cur->val <= insertVal || cur->next->val >= insertVal){
+                    Node* next = cur->next;
+                    cur->next = node;
+                    node->next = next;
+                    return head;
+                }
+            }
+            if(cur->val <= insertVal && insertVal <= cur->next->val){
+                    Node* next = cur->next;
+                    cur->next = node;
+                    node->next = next;
+                    return head;
+            }
+            cur = cur->next;
+        }
+        //如以上条件均不满足，直接将点插入头节点后面，这一步非常容易忘记
+        Node* next = cur->next;
+        cur->next = node;
+        node->next = next;
+        return head;
+    }
+};
+```
+
+
 
 ## [剑指 Offer II 031. 最近最少使用缓存](https://leetcode-cn.com/problems/OrIXps/)
 
@@ -2311,6 +2411,25 @@ public:
 };
 ```
 
+**二刷：**
+
+```c++
+class Solution {
+public:
+    TreeNode* pruneTree(TreeNode* root) {
+        if(!root) return nullptr;
+        root->left = pruneTree(root->left);
+        root->right = pruneTree(root->right);
+        if(root->val == 0 && !root->left && !root->right){
+            root = nullptr;
+        }
+        return root;
+    }
+};
+```
+
+
+
 ## [剑指 Offer II 048. 序列化与反序列化二叉树](https://leetcode-cn.com/problems/h54YBf/)
 
 ```c++
@@ -2475,6 +2594,37 @@ public:
     }
 };
 ```
+
+**二刷**
+
+```c++
+class Solution {
+public:
+    unordered_map<int,int> mp;
+    int res;
+    void dfs(TreeNode* root, int targetSum, int path){
+        if(!root) return ;
+        path += root->val;
+
+        if(mp.count(path - targetSum)){
+            res += mp[path - targetSum];
+        }
+        mp[path]++;
+
+        dfs(root->left, targetSum, path);
+        dfs(root->right, targetSum, path);
+
+        mp[path]--;
+    }
+    int pathSum(TreeNode* root, int targetSum) {
+        mp[0]++;
+        dfs(root,targetSum,0);
+        return res;
+    }
+};
+```
+
+
 
 ## [剑指 Offer II 051. 节点之和最大的路径](https://leetcode-cn.com/problems/jC7MId/)
 
@@ -2701,9 +2851,9 @@ map_name.lower_bound(key)
 
 ## [剑指 Offer II 057. 值和下标之差都在给定的范围内](https://leetcode-cn.com/problems/7WqeDu/)
 
-**对于该题，直观想法是对于每一个数，遍历其前面`k`个数，寻找是否存在在区间`[nums[i] - t, nyms[i] + t]`内的数，但是该解法时间复杂度过高，容易超时**
+**对于该题，直观想法是对于每一个数，遍历其前面`k`个数，寻找是否存在在区间`[nums[i] - t, nums[i] + t]`内的数，但是该解法时间复杂度过高，容易超时**
 
-**在暴力解法中其实一直在寻找是否存在落在` [nums[i] - t, nyms[i] + t] `的数，这个过程可以用平衡的二叉搜索树来加速，平衡的二叉树的搜索时间复杂度为` O(logk)`。在 `STL` 中` set` 和 `map` 属于关联容器，其内部由红黑树实现，红黑树是平衡二叉树的一种优化实现，其搜索时间复杂度也为 `O(logk)`。逐次扫码数组，对于每个数字` nums[i]`，当前的 `set `应该由其前 `k `个数字组成，可以` lower_bound `函数可以从` set` 中找到符合大于等于 `nums[i] - t` 的最小的数，若该数存在且小于等于` nums[i] + t`，则找到了符合要求的一对数。**
+**在暴力解法中其实一直在寻找是否存在落在` [nums[i] - t, nums[i] + t] `的数，这个过程可以用平衡的二叉搜索树来加速，平衡的二叉树的搜索时间复杂度为` O(logk)`。在 `STL` 中` set` 和 `map` 属于关联容器，其内部由红黑树实现，红黑树是平衡二叉树的一种优化实现，其搜索时间复杂度也为 `O(logk)`。逐次扫码数组，对于每个数字` nums[i]`，当前的 `set `应该由其前 `k `个数字组成，可以` lower_bound `函数可以从` set` 中找到符合大于等于 `nums[i] - t` 的最小的数，若该数存在且小于等于` nums[i] + t`，则找到了符合要求的一对数。**
 
 - 维护一个大小为`k`的滑动窗口，每次寻找窗口内的最接近 `nums[i] - t` 的最小的数，若该数存在且小于等于` nums[i] + t`，则找到了符合要求的一对数。
 
@@ -2906,15 +3056,9 @@ public:
 
         // pair 的第一个元素代表数组的值，第二个元素代表了该值出现的次数
         priority_queue<pair<int, int>, vector<pair<int, int>>, decltype(&cmp)> q(cmp);
-        for (auto& [num, count] : occurrences) {
-            if (q.size() == k) {
-                if (q.top().second < count) {
-                    q.pop();
-                    q.emplace(num, count);
-                }
-            } else {
-                q.emplace(num, count);
-            }
+        for (auto& o : occurrences) {
+            q.push(o);
+            if(q.size() > k) q.pop();
         }
         vector<int> ret;
         while (!q.empty()) {
@@ -3522,55 +3666,52 @@ class Trie{
 - 然后遍历所有数字，依次寻找与其异或后结果最大的`y`,并返回结果`x^y`
 
 ```c++
-class Trie
-{
-private:
-
+class Trie{
+    Trie* next[2]={nullptr};
 public:
-    Trie(){}
+    Trie(){};
 
-    void insert(int x)  // 在前缀树中插入值x
-    {
-        Trie *root=this;
-        // 高位存储来Trie的前面，所以我们从左向右存储
-        for(int i=30;i>=0;i--)
-        {
-            // 取第i位的数字，30...0
-            int u = x >> i & 1;
-            // 若第u位为空，则创建一个新节点，然后root移动到下一个节点
-            if(!root->next[u])root->next[u]=new Trie();
-            root=root->next[u];
+    void insert(int n){
+        Trie* root = this;
+        for(int i = 30; i >= 0; i--){
+            int cur = n >> i & 1;
+            if(!root->next[cur]){
+                root->next[cur] = new Trie();
+            }
+            root = root->next[cur];
         }
     }
 
-    int srearch(int x)  // 在前缀树中寻找 x 的最大异或值
-    {
-        Trie *root=this;
-        // res表示最大异或值，每次res*2表示左移一位，31循环后左移了31位了，+u表示加上当前的最低位数字
-        int res=0;
-        for(int i=30;i>=0;i--)
-        {
-            int u=x>>i&1;
-            // 若 x 的第 u 位存在，我们走到相反的方向去，因为异或总是|值|相反才取最大值的
-            if(root->next[!u])root=root->next[!u],res=res*2+!u;
-            // 相反方向的节点为空，只能顺着相同方向走了
-            else root=root->next[u],res=res*2+u;
+    int search(int x){
+        Trie* root = this;
+        int res = 0;
+        for(int i = 30; i >= 0; i--){
+            int n = (x >> i) & 1;
+            if(root->next[!n]){
+                root = root->next[!n];
+                res = res * 2 + !n;
+            }else{
+                root = root->next[n];
+                res = res * 2 + n;
+            }
         }
-        // 由于上面我们得到的异或另一个数组元素，此时我们需要将这个数组元素与x想异或得到 两个数的最大异或值
-        res^=x;
+        res ^= x;
         return res;
     }
 };
-
 class Solution {
 public:
+    Trie* root = new Trie();
     int findMaximumXOR(vector<int>& nums) {
-        Trie *root=new Trie();
-        for(auto x:nums)root->insert(x);
-        int res=0;
-        for(auto x:nums)
-            res=max(res,root->srearch(x));
+        for(auto num : nums)
+            root->insert(num);
+
+        int res = 0;
+        for(auto num : nums){
+            res = max(res, root->search(num));
+        }
         return res;
+
     }
 };
 ```

@@ -5601,7 +5601,7 @@ public:
 
 ## [剑指 Offer II 106. 二分图](https://leetcode.cn/problems/vEAB3K/)
 
-**染色法判断二分图**
+### **染色法**
 
 ```c++
 class Solution {
@@ -5645,6 +5645,44 @@ public:
     }
 };
 ```
+
+### 并查集：
+
+```c++
+class Solution {
+public:
+    int p[101];
+    int find(int x){
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+
+    void merge(int i, int j){
+        int p1 = find(i);
+        int p2 = find(j); 
+        if(p1 != p2){
+            p[p1] = p2;
+        }
+    }
+    bool isBipartite(vector<vector<int>>& graph) {
+        int n = graph.size();
+        for(int i = 0; i < n; i++){
+            p[i] = i;
+        }
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < graph[i].size(); j++){
+                int p1 = find(i);
+                int p2 = find(graph[i][j]);
+                if(p1 == p2) return false;
+                merge(graph[i][0], graph[i][j]);
+            }
+        }
+        return true;
+    }
+};
+```
+
+
 
 ## [剑指 Offer II 107. 矩阵中的距离](https://leetcode.cn/problems/2bCMpM/)
 
@@ -5789,7 +5827,7 @@ private:
                     if (st2.count(word)) {
                         return true;
                     }
-                    //st3c
+                    //st3
                     st3.insert(word);
                 }
             }
@@ -6388,6 +6426,44 @@ public:
 
 # 并查集
 
+## [剑指 Offer II 106. 二分图](https://leetcode.cn/problems/vEAB3K/)
+
+```c++
+class Solution {
+public:
+    int p[101];
+    int find(int x){
+        if(p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    }
+
+    void merge(int i, int j){
+        int p1 = find(i);
+        int p2 = find(j); 
+        if(p1 != p2){
+            p[p1] = p2;
+        }
+    }
+    bool isBipartite(vector<vector<int>>& graph) {
+        int n = graph.size();
+        for(int i = 0; i < n; i++){
+            p[i] = i;
+        }
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < graph[i].size(); j++){
+                int p1 = find(i);
+                int p2 = find(graph[i][j]);
+                if(p1 == p2) return false;
+                merge(graph[i][0], graph[i][j]);
+            }
+        }
+        return true;
+    }
+};
+```
+
+
+
 ## [剑指 Offer II 116. 省份数量](https://leetcode.cn/problems/bLyHh0/)
 
 ### BFS
@@ -6790,6 +6866,96 @@ public:
             res = max(res,len);
         }
         return res;
+    }
+};
+```
+
+## [1631. 最小体力消耗路径](https://leetcode.cn/problems/path-with-minimum-effort/)
+
+- 计算所有边的权重，权重即为边两断点的**高度差绝对值**
+- 将所有边的权重按从小到大排序，**按权重从小到大**合并点
+- 若加入某权重为`a`的边后，点`(0,0)`与`(m-1,n-1)`处于同一集合，则说明存在一条路径，将两点联通，并且该路径体力消耗值最小，为`a`
+
+```c++
+class UF {
+public:
+    vector<int> fa;
+    vector<int> sz;
+    int n;
+    //连通块数量
+    int comp_cnt;
+    
+public:
+    UF(int _n): n(_n), comp_cnt(_n), fa(_n), sz(_n, 1) {
+        iota(fa.begin(), fa.end(), 0);
+    }
+    
+    int findset(int x) {
+        return fa[x] == x ? x : fa[x] = findset(fa[x]);
+    }
+    
+    void unite(int x, int y) {
+        x = findset(x);
+        y = findset(y);
+        if (x == y) {
+            return;
+        }
+        if (sz[x] < sz[y]) {
+            swap(x, y);
+        }
+        fa[y] = x;
+        sz[x] += sz[y];
+        --comp_cnt;
+    }
+    
+    bool connected(int x, int y) {
+        x = findset(x);
+        y = findset(y);
+        return x == y;
+    }
+};
+
+//自定义边结构
+struct Edge {
+    int x, y, z;
+    Edge(int _x, int _y, int _z): x(_x), y(_y), z(_z) {}
+    bool operator< (const Edge& that) const {
+        return z < that.z;
+    }
+};
+
+class Solution {
+public:
+    int minimumEffortPath(vector<vector<int>>& heights) {
+        int m = heights.size();
+        int n = heights[0].size();
+        vector<Edge> edges;
+        //将所有的边加入集合
+        //从左向右、从上到下遍历，对于当前点，将其与上方的点以及下方的点的边加进来，遍历所有点以后，图中所有的边也都加入了集合
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                //当前点可由其上方点或者左边点到达
+                int id = i * n + j;
+                if (i > 0) {
+                    //点(i-1,j) 与 (i,j)的高度差绝对值
+                    edges.emplace_back(id - n, id, abs(heights[i][j] - heights[i - 1][j]));
+                }
+                if (j > 0) {
+                    //点(i,j-1) 与 (i,j)的高度差绝对值
+                    edges.emplace_back(id - 1, id, abs(heights[i][j] - heights[i][j - 1]));
+                }
+            }
+        }
+        
+        sort(edges.begin(), edges.end());
+        UF uf(m * n);
+        for (const auto& edge: edges) {
+            uf.unite(edge.x, edge.y);
+            if (uf.connected(0, m * n - 1)) {
+                return edge.z;
+            }
+        }
+        return 0;
     }
 };
 ```

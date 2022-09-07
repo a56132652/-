@@ -6123,6 +6123,8 @@ public:
 };
 ```
 
+# 拓扑排序
+
 ## [剑指 Offer II 112. 最长递增路径](https://leetcode.cn/problems/fpTFWP/)
 
 **DFS加记忆化搜索**
@@ -6179,6 +6181,71 @@ public:
 };
 ```
 
+**拓扑排序**
+
+- 每个点的出度即有多少条递增边从该单元格出发
+
+```c++
+class Solution {
+private:
+    const int dx[4] = {0,-1,0,1};
+    const int dy[4] = {1,0,-1,0};
+public:
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        if (matrix.size() == 0 || matrix[0].size() == 0) {
+            return 0;
+        }
+        int m = matrix.size();
+        int n = matrix[0].size();
+
+        //出度数组
+        vector<vector<int>> outDegree(m,vector<int>(n,0));
+        //统计出度
+        for(int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                for(int k = 0; k < 4; k++){
+                    int a = i + dx[k];
+                    int b = j + dy[k];
+                    if(a >= 0 && a < m && b >= 0 && b < n && matrix[a][b] > matrix[i][j])
+                        outDegree[i][j]++;
+                }
+            }
+        }
+
+        queue<pair<int,int>> q;
+        //出度为 0 的点入队列
+        for(int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                if(outDegree[i][j] == 0) q.push({i,j});
+            }
+        }
+
+        int res = 0;
+        while(!q.empty()){
+            res++;
+            int size = q.size();
+            for(int i = 0; i < size; i++){
+                auto cur = q.front(); q.pop();
+                int r = cur.first;
+                int c = cur.second;
+                for(int k = 0; k < 4; k++){
+                    int a = r + dx[k];
+                    int b = c + dy[k];
+
+                    if(a >= 0 && a < m && b >= 0 && b < n && matrix[a][b] < matrix[r][c]){
+                        --outDegree[a][b];
+                        if(outDegree[a][b] == 0) q.push({a,b});
+                    }
+                }
+            }
+        } 
+        return res;
+    }
+};
+```
+
+
+
 ## [剑指 Offer II 113. 课程顺序](https://leetcode.cn/problems/QA2IGt/)
 
 **拓扑排序**
@@ -6193,7 +6260,7 @@ public:
 
 - 首先将所有入度为0的点加入队列，然后从队头元素开始遍历其临边
 - 将临边节点入度减一，若减一后入度为0，则将其加入队列
-- 每次将对头元素加入结果集
+- 每次将队头元素加入结果集
 - 若最后结果集元素数量等于课程数量，说明找到了一条拓扑排序路径，否则不存在拓扑排序
 
 **代码：**
@@ -6458,6 +6525,70 @@ public:
             }
         }
         return true;
+    }
+};
+```
+
+## [剑指 Offer II 111. 计算除法](https://leetcode.cn/problems/vlzXQL/)
+
+### 并查集
+
+```c++
+class Solution {
+public:
+    int findf(vector<int>& f, vector<double>& w, int x) {
+        if (f[x] != x) {
+            int father = findf(f, w, f[x]);
+            w[x] = w[x] * w[f[x]];
+            f[x] = father;
+        }
+        return f[x];
+    }
+
+    void merge(vector<int>& f, vector<double>& w, int x, int y, double val) {
+        int fx = findf(f, w, x);
+        int fy = findf(f, w, y);
+        f[fx] = fy;
+        w[fx] = val * w[y] / w[x];
+    }
+
+    vector<double> calcEquation(vector<vector<string>>& equations, vector<double>& values, vector<vector<string>>& queries) {
+        int nvars = 0;
+        unordered_map<string, int> variables;
+
+        int n = equations.size();
+        //计算存在多少个不同字符
+        for (int i = 0; i < n; i++) {
+            if (variables.find(equations[i][0]) == variables.end()) {
+                variables[equations[i][0]] = nvars++;
+            }
+            if (variables.find(equations[i][1]) == variables.end()) {
+                variables[equations[i][1]] = nvars++;
+            }
+        }
+        vector<int> f(nvars);
+        vector<double> w(nvars, 1.0);
+        for (int i = 0; i < nvars; i++) {
+            f[i] = i;
+        }
+
+        for (int i = 0; i < n; i++) {
+            int va = variables[equations[i][0]], vb = variables[equations[i][1]];
+            merge(f, w, va, vb, values[i]);
+        }
+        vector<double> ret;
+        for (const auto& q: queries) {
+            double result = -1.0;
+            if (variables.find(q[0]) != variables.end() && variables.find(q[1]) != variables.end()) {
+                int ia = variables[q[0]], ib = variables[q[1]];
+                int fa = findf(f, w, ia), fb = findf(f, w, ib);
+                if (fa == fb) {
+                    result = w[ia] / w[ib];
+                }
+            }
+            ret.push_back(result);
+        }
+        return ret;
     }
 };
 ```
@@ -6872,7 +7003,7 @@ public:
 
 ## [1631. 最小体力消耗路径](https://leetcode.cn/problems/path-with-minimum-effort/)
 
-- 计算所有边的权重，权重即为边两断点的**高度差绝对值**
+- 计算所有边的权重，权重即为边两端点的**高度差绝对值**
 - 将所有边的权重按从小到大排序，**按权重从小到大**合并点
 - 若加入某权重为`a`的边后，点`(0,0)`与`(m-1,n-1)`处于同一集合，则说明存在一条路径，将两点联通，并且该路径体力消耗值最小，为`a`
 
@@ -6956,6 +7087,138 @@ public:
             }
         }
         return 0;
+    }
+};
+```
+
+
+
+# Dijkstra算法
+
+## [743. 网络延迟时间](https://leetcode.cn/problems/network-delay-time/)
+
+**邻接表**
+
+```c++
+class Solution {
+public:
+
+    int networkDelayTime(vector<vector<int>>& times, int n, int k) {
+        vector<vector<pair<int,int>>> graph(n+1);
+        //j
+        for(auto t : times){
+            graph[t[0]].push_back({t[1], t[2]});
+        }
+        
+        vector<int> dist(n+1,INT_MAX);
+        dist[k] = 0;
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> q;
+        q.push({0,k});
+
+        while(!q.empty()){
+            auto cur = q.top();q.pop();
+            int dis = cur.first;
+            int index = cur.second;
+            if(dist[index] < dis) continue;
+
+            for(auto g : graph[index]){
+                int y = g.first, d = dist[index] + g.second;
+                if(d < dist[y]){
+                    dist[y] = d;
+                    q.push({d,y});
+                }
+            }
+        }
+
+        int res = INT_MIN;
+        for(int i = 1; i <= n; i++){
+            res = max(res, dist[i]);
+        }
+        if(res == INT_MAX) return -1;
+        return res;
+    }
+};
+```
+
+**邻接矩阵**
+
+```c++
+class Solution {
+public:
+    int networkDelayTime(vector<vector<int>>& times, int n, int k) {
+        vector<vector<int>> graph(n+1,vector<int>(n+1,INT_MAX));
+        vector<int> dist(n+1,INT_MAX);
+        dist[k] = 0;
+
+        for(int i = 0;i < times.size(); i++){
+            graph[times[i][0]][times[i][1]] = times[i][2];
+        }
+
+        priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> q;
+        q.push({k,0});
+        while(!q.empty()){
+            auto cur = q.top(); q.pop();
+            int node = cur.first;
+            int time = cur.second;
+            for(int i = 0; i < graph[node].size(); i++){
+                if(graph[node][i] == INT_MAX) continue;
+                if(dist[node] + graph[node][i] < dist[i]){
+                    dist[i] = dist[node] + graph[node][i];
+                    q.push({i,dist[i]});
+                }
+            }
+        }
+
+        int res = 0;
+        for(int i = 1; i <= n; i++){
+            res = max(res,dist[i]);
+        }
+        
+        return res == INT_MAX ? -1 : res;
+    }
+};
+```
+
+
+
+# Floyd算法
+
+## [1334. 阈值距离内邻居最少的城市](https://leetcode.cn/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/)
+
+```c++
+class Solution {
+public:
+    int findTheCity(int n, vector<vector<int>>& edges, int distanceThreshold) {
+        vector<vector<int>> dist(n,vector<int>(n,INT_MAX));
+        for(int i = 0; i < n; i++) dist[i][i] = 0;
+        for(auto edge : edges){
+            dist[edge[0]][edge[1]] = edge[2];
+            dist[edge[1]][edge[0]] = edge[2];
+        }
+
+        for(int k = 0; k < n; k++){
+            for(int i = 0; i < n; i++){
+                for(int j = 0; j < n; j++){
+                    long ik = dist[i][k], kj = dist[k][j];
+                    if(dist[i][j] > ik + kj)
+                        dist[i][j] = ik + kj;
+                }
+            }
+        }
+
+        int res = 0,minCount = n;
+        for(int i = 0; i < n; i++){
+            int count = 0;
+            for(int j = 0; j < n; j++){
+                if(j == i) continue;
+                if(dist[i][j] <= distanceThreshold) count++;
+            }
+            if(minCount >= count){
+                minCount = count;
+                res = i;
+            }
+        }
+        return res;
     }
 };
 ```
